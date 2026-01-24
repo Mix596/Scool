@@ -1,92 +1,92 @@
-// Конфигурация
-const API_BASE_URL = window.location.origin; // Автоматически определяем URL API
-let currentUser = { id: 1, username: 'demo_user', class_number: 7 }; // Демо пользователь
+// РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ
+const API_BASE_URL = window.location.origin; // РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё РѕРїСЂРµРґРµР»СЏРµРј URL API
+let currentUser = { id: 1, username: 'demo_user', class_number: 7 }; // Р”РµРјРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ
 
-// Данные для поиска (резервные, если API недоступно)
+// Р”Р°РЅРЅС‹Рµ РґР»СЏ РїРѕРёСЃРєР° (СЂРµР·РµСЂРІРЅС‹Рµ, РµСЃР»Рё API РЅРµРґРѕСЃС‚СѓРїРЅРѕ)
 const fallbackSearchData = [
   {
-    title: "Физика - 7 класс",
-    description: "14% завершено",
-    type: "Предмет",
+    title: "Р¤РёР·РёРєР° - 7 РєР»Р°СЃСЃ",
+    description: "14% Р·Р°РІРµСЂС€РµРЅРѕ",
+    type: "РџСЂРµРґРјРµС‚",
     icon: "fas fa-atom",
-    keywords: "физика наука 7 класс"
+    keywords: "С„РёР·РёРєР° РЅР°СѓРєР° 7 РєР»Р°СЃСЃ"
   },
   {
-    title: "Таблица лидеров",
-    description: "Елена В. (1200), Вася (1000), Евгений (900)",
-    type: "Рейтинг",
+    title: "РўР°Р±Р»РёС†Р° Р»РёРґРµСЂРѕРІ",
+    description: "Р•Р»РµРЅР° Р’. (1200), Р’Р°СЃСЏ (1000), Р•РІРіРµРЅРёР№ (900)",
+    type: "Р РµР№С‚РёРЅРі",
     icon: "fas fa-chart-line",
-    keywords: "лидеры турнир рейтинг таблица баллы"
+    keywords: "Р»РёРґРµСЂС‹ С‚СѓСЂРЅРёСЂ СЂРµР№С‚РёРЅРі С‚Р°Р±Р»РёС†Р° Р±Р°Р»Р»С‹"
   },
   {
-    title: "Написать нам",
-    description: "Свяжитесь с поддержкой SCool",
-    type: "Поддержка",
+    title: "РќР°РїРёСЃР°С‚СЊ РЅР°Рј",
+    description: "РЎРІСЏР¶РёС‚РµСЃСЊ СЃ РїРѕРґРґРµСЂР¶РєРѕР№ SCool",
+    type: "РџРѕРґРґРµСЂР¶РєР°",
     icon: "fas fa-envelope",
-    keywords: "написать нам поддержка помощь обратная связь"
+    keywords: "РЅР°РїРёСЃР°С‚СЊ РЅР°Рј РїРѕРґРґРµСЂР¶РєР° РїРѕРјРѕС‰СЊ РѕР±СЂР°С‚РЅР°СЏ СЃРІСЏР·СЊ"
   }
 ];
 
-// Инициализация приложения
+// РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ
 async function initApp() {
-  console.log('?? Инициализация приложения SCool...');
+  console.log('?? РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ SCool...');
   
   try {
-    // Пробуем проинициализировать демо данные в БД
+    // РџСЂРѕР±СѓРµРј РїСЂРѕРёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ РґРµРјРѕ РґР°РЅРЅС‹Рµ РІ Р‘Р”
     await fetch(`${API_BASE_URL}/api/init-demo`, {
       method: 'POST'
-    }).catch(e => console.log('Демо данные уже инициализированы или сервер недоступен'));
+    }).catch(e => console.log('Р”РµРјРѕ РґР°РЅРЅС‹Рµ СѓР¶Рµ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅС‹ РёР»Рё СЃРµСЂРІРµСЂ РЅРµРґРѕСЃС‚СѓРїРµРЅ'));
     
-    // Загружаем данные с сервера
+    // Р—Р°РіСЂСѓР¶Р°РµРј РґР°РЅРЅС‹Рµ СЃ СЃРµСЂРІРµСЂР°
     await loadDataFromServer();
     
-    // Устанавливаем обработчики событий
+    // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕР±СЂР°Р±РѕС‚С‡РёРєРё СЃРѕР±С‹С‚РёР№
     setupEventListeners();
     
-    console.log('? Приложение успешно инициализировано');
+    console.log('? РџСЂРёР»РѕР¶РµРЅРёРµ СѓСЃРїРµС€РЅРѕ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅРѕ');
   } catch (error) {
-    console.error('? Ошибка инициализации:', error);
+    console.error('? РћС€РёР±РєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё:', error);
     useFallbackData();
   }
 }
 
-// Загрузка данных с сервера
+// Р—Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С… СЃ СЃРµСЂРІРµСЂР°
 async function loadDataFromServer() {
   try {
-    // Загружаем предметы для текущего класса пользователя
+    // Р—Р°РіСЂСѓР¶Р°РµРј РїСЂРµРґРјРµС‚С‹ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ РєР»Р°СЃСЃР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     const subjectsResponse = await fetch(`${API_BASE_URL}/api/subjects/${currentUser.class_number}`);
     if (subjectsResponse.ok) {
       const subjects = await subjectsResponse.json();
       updateSubjects(subjects);
     }
     
-    // Загружаем лидерборд
+    // Р—Р°РіСЂСѓР¶Р°РµРј Р»РёРґРµСЂР±РѕСЂРґ
     const leaderboardResponse = await fetch(`${API_BASE_URL}/api/leaderboard`);
     if (leaderboardResponse.ok) {
       const leaderboard = await leaderboardResponse.json();
       updateLeaderboard(leaderboard);
     }
     
-    // Загружаем достижения
+    // Р—Р°РіСЂСѓР¶Р°РµРј РґРѕСЃС‚РёР¶РµРЅРёСЏ
     const achievementsResponse = await fetch(`${API_BASE_URL}/api/achievements`);
     if (achievementsResponse.ok) {
       const achievements = await achievementsResponse.json();
       updateAchievements(achievements);
     }
     
-    // Загружаем прогресс пользователя
+    // Р—Р°РіСЂСѓР¶Р°РµРј РїСЂРѕРіСЂРµСЃСЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     const progressResponse = await fetch(`${API_BASE_URL}/api/progress/${currentUser.id}`);
     if (progressResponse.ok) {
       const progress = await progressResponse.json();
       updateProgress(progress);
     }
   } catch (error) {
-    console.warn('??  Не удалось загрузить данные с сервера, используем локальные данные');
+    console.warn('??  РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґР°РЅРЅС‹Рµ СЃ СЃРµСЂРІРµСЂР°, РёСЃРїРѕР»СЊР·СѓРµРј Р»РѕРєР°Р»СЊРЅС‹Рµ РґР°РЅРЅС‹Рµ');
     throw error;
   }
 }
 
-// Обновление предметов на странице
+// РћР±РЅРѕРІР»РµРЅРёРµ РїСЂРµРґРјРµС‚РѕРІ РЅР° СЃС‚СЂР°РЅРёС†Рµ
 function updateSubjects(subjects) {
   const subjectCards = document.querySelectorAll('.subject-card');
   subjectCards.forEach((card, index) => {
@@ -99,7 +99,7 @@ function updateSubjects(subjects) {
   });
 }
 
-// Обновление лидерборда
+// РћР±РЅРѕРІР»РµРЅРёРµ Р»РёРґРµСЂР±РѕСЂРґР°
 function updateLeaderboard(leaderboard) {
   const leaderList = document.querySelector('.leader-list');
   if (!leaderList) return;
@@ -122,7 +122,7 @@ function updateLeaderboard(leaderboard) {
   });
 }
 
-// Обновление достижений
+// РћР±РЅРѕРІР»РµРЅРёРµ РґРѕСЃС‚РёР¶РµРЅРёР№
 function updateAchievements(achievements) {
   const achievementsContainer = document.querySelector('.achievements-list');
   if (!achievementsContainer || !achievements.length) return;
@@ -133,7 +133,7 @@ function updateAchievements(achievements) {
   const achievementDate = document.querySelector('.date-value');
   
   if (dateElement) {
-    dateElement.textContent = firstAchievement.date || 'Дата';
+    dateElement.textContent = firstAchievement.date || 'Р”Р°С‚Р°';
   }
   if (achievementTitle) {
     achievementTitle.textContent = firstAchievement.title;
@@ -143,7 +143,7 @@ function updateAchievements(achievements) {
   }
 }
 
-// Обновление прогресса
+// РћР±РЅРѕРІР»РµРЅРёРµ РїСЂРѕРіСЂРµСЃСЃР°
 function updateProgress(progressData) {
   progressData.forEach(progress => {
     const subjectCards = document.querySelectorAll('.subject-card');
@@ -157,28 +157,28 @@ function updateProgress(progressData) {
           progressFill.style.width = `${progress.progress_percent}%`;
         }
         if (progressText) {
-          progressText.textContent = `${progress.progress_percent}% Завершено`;
+          progressText.textContent = `${progress.progress_percent}% Р—Р°РІРµСЂС€РµРЅРѕ`;
         }
       }
     });
   });
 }
 
-// Использование резервных данных
+// РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ СЂРµР·РµСЂРІРЅС‹С… РґР°РЅРЅС‹С…
 function useFallbackData() {
-  console.log('?? Используем резервные данные...');
+  console.log('?? РСЃРїРѕР»СЊР·СѓРµРј СЂРµР·РµСЂРІРЅС‹Рµ РґР°РЅРЅС‹Рµ...');
   
-  // Обновляем лидерборд из резервных данных
+  // РћР±РЅРѕРІР»СЏРµРј Р»РёРґРµСЂР±РѕСЂРґ РёР· СЂРµР·РµСЂРІРЅС‹С… РґР°РЅРЅС‹С…
   updateLeaderboard([
-    { full_name: 'Елена В.', username: 'elena_v', score: 1200 },
-    { full_name: 'Вася', username: 'vasya', score: 1000 },
-    { full_name: 'Евгений', username: 'evgeniy', score: 900 }
+    { full_name: 'Р•Р»РµРЅР° Р’.', username: 'elena_v', score: 1200 },
+    { full_name: 'Р’Р°СЃСЏ', username: 'vasya', score: 1000 },
+    { full_name: 'Р•РІРіРµРЅРёР№', username: 'evgeniy', score: 900 }
   ]);
 }
 
-// Настройка обработчиков событий
+// РќР°СЃС‚СЂРѕР№РєР° РѕР±СЂР°Р±РѕС‚С‡РёРєРѕРІ СЃРѕР±С‹С‚РёР№
 function setupEventListeners() {
-  // Переключение темы (оставляем ваш существующий код)
+  // РџРµСЂРµРєР»СЋС‡РµРЅРёРµ С‚РµРјС‹ (РѕСЃС‚Р°РІР»СЏРµРј РІР°С€ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ РєРѕРґ)
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     themeToggle.addEventListener('change', function() {
@@ -193,13 +193,13 @@ function setupEventListeners() {
     });
   }
   
-  // Переключение классов
+  // РџРµСЂРµРєР»СЋС‡РµРЅРёРµ РєР»Р°СЃСЃРѕРІ
   document.querySelectorAll('.class-btn').forEach(button => {
     button.addEventListener('click', async function() {
       const selectedClass = this.getAttribute('data-class');
       switchLayout(selectedClass);
       
-      // Обновляем данные для выбранного класса
+      // РћР±РЅРѕРІР»СЏРµРј РґР°РЅРЅС‹Рµ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РєР»Р°СЃСЃР°
       currentUser.class_number = parseInt(selectedClass);
       try {
         const response = await fetch(`${API_BASE_URL}/api/subjects/${selectedClass}`);
@@ -208,12 +208,12 @@ function setupEventListeners() {
           updateSubjects(subjects);
         }
       } catch (error) {
-        console.warn('Не удалось загрузить предметы для класса', selectedClass);
+        console.warn('РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РїСЂРµРґРјРµС‚С‹ РґР»СЏ РєР»Р°СЃСЃР°', selectedClass);
       }
     });
   });
   
-  // Поиск
+  // РџРѕРёСЃРє
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
     let searchTimeout;
@@ -233,7 +233,7 @@ function setupEventListeners() {
             const results = await response.json();
             displaySearchResults(results, searchTerm);
           } else {
-            // Используем резервные данные
+            // РСЃРїРѕР»СЊР·СѓРµРј СЂРµР·РµСЂРІРЅС‹Рµ РґР°РЅРЅС‹Рµ
             const localResults = fallbackSearchData.filter(item => 
               item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
               item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
@@ -241,7 +241,7 @@ function setupEventListeners() {
             displaySearchResults(localResults, searchTerm);
           }
         } catch (error) {
-          console.error('Ошибка поиска:', error);
+          console.error('РћС€РёР±РєР° РїРѕРёСЃРєР°:', error);
           const localResults = fallbackSearchData.filter(item => 
             item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
             item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
@@ -252,13 +252,13 @@ function setupEventListeners() {
     });
   }
   
-  // Кнопка "Вся таблица"
+  // РљРЅРѕРїРєР° "Р’СЃСЏ С‚Р°Р±Р»РёС†Р°"
   document.querySelector('.btn-full')?.addEventListener('click', function() {
-    alert('Функция "Вся таблица" подключена к базе данных!');
+    alert('Р¤СѓРЅРєС†РёСЏ "Р’СЃСЏ С‚Р°Р±Р»РёС†Р°" РїРѕРґРєР»СЋС‡РµРЅР° Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…!');
   });
 }
 
-// Функция для отображения результатов поиска (адаптированная)
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ РїРѕРёСЃРєР° (Р°РґР°РїС‚РёСЂРѕРІР°РЅРЅР°СЏ)
 function displaySearchResults(results, searchTerm) {
   const searchResults = document.getElementById('search-results');
   if (!searchResults) return;
@@ -270,7 +270,7 @@ function displaySearchResults(results, searchTerm) {
     noResults.className = 'search-no-results';
     noResults.innerHTML = `
       <i class="fas fa-search" style="margin-right: 8px;"></i>
-      ничего не найдено
+      РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ
     `;
     searchResults.appendChild(noResults);
   } else {
@@ -278,7 +278,7 @@ function displaySearchResults(results, searchTerm) {
       const resultItem = document.createElement('div');
       resultItem.className = 'search-result-item';
       
-      // Подсветка текста
+      // РџРѕРґСЃРІРµС‚РєР° С‚РµРєСЃС‚Р°
       const highlightedTitle = highlightText(item.title, searchTerm);
       const highlightedDesc = highlightText(item.description, searchTerm);
       
@@ -292,14 +292,14 @@ function displaySearchResults(results, searchTerm) {
       `;
       
       resultItem.addEventListener('click', function() {
-        // Закрываем результаты поиска
+        // Р—Р°РєСЂС‹РІР°РµРј СЂРµР·СѓР»СЊС‚Р°С‚С‹ РїРѕРёСЃРєР°
         searchResults.classList.remove('show');
         searchInput.value = '';
         
-        // Прокручиваем к соответствующему разделу
-        if (item.type === 'Таблица лидеров') {
+        // РџСЂРѕРєСЂСѓС‡РёРІР°РµРј Рє СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РµРјСѓ СЂР°Р·РґРµР»Сѓ
+        if (item.type === 'РўР°Р±Р»РёС†Р° Р»РёРґРµСЂРѕРІ') {
           document.querySelector('.leaderboard')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (item.type === 'Написать нам') {
+        } else if (item.type === 'РќР°РїРёСЃР°С‚СЊ РЅР°Рј') {
           document.querySelector('.contact-button, .contact-btn')?.scrollIntoView({ behavior: 'smooth' });
         }
       });
@@ -311,7 +311,7 @@ function displaySearchResults(results, searchTerm) {
   searchResults.classList.add('show');
 }
 
-// Вспомогательные функции (оставляем ваши)
+// Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ С„СѓРЅРєС†РёРё (РѕСЃС‚Р°РІР»СЏРµРј РІР°С€Рё)
 function highlightText(text, searchTerm) {
   if (!searchTerm) return text;
   const regex = new RegExp(`(${searchTerm})`, 'gi');
@@ -364,9 +364,9 @@ function updateThemeLabels(isDark) {
   }
 }
 
-// Инициализация при загрузке страницы
+// РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїСЂРё Р·Р°РіСЂСѓР·РєРµ СЃС‚СЂР°РЅРёС†С‹
 document.addEventListener('DOMContentLoaded', function() {
-  // Инициализация темы
+  // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ С‚РµРјС‹
   const themeToggle = document.getElementById('theme-toggle');
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark-theme');
@@ -376,15 +376,15 @@ document.addEventListener('DOMContentLoaded', function() {
     updateThemeLabels(false);
   }
   
-  // Инициализация приложения
+  // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ
   initApp();
   
-  // Устанавливаем обработчики для кнопок на главную
+  // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕР±СЂР°Р±РѕС‚С‡РёРєРё РґР»СЏ РєРЅРѕРїРѕРє РЅР° РіР»Р°РІРЅСѓСЋ
   document.getElementById('home-from-desktop9')?.addEventListener('click', goToHome);
   document.getElementById('home-from-desktop10')?.addEventListener('click', goToHome);
   document.getElementById('home-from-desktop11')?.addEventListener('click', goToHome);
   
-  // Инициализация начального состояния
+  // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°С‡Р°Р»СЊРЅРѕРіРѕ СЃРѕСЃС‚РѕСЏРЅРёСЏ
   document.getElementById('desktop9-layout').style.display = 'none';
   document.getElementById('desktop10-layout').style.display = 'none';
   document.getElementById('desktop11-layout').style.display = 'none';
