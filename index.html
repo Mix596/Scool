@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCool - Р›РёС‡РЅС‹Р№ РєР°Р±РёРЅРµС‚</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <i class="fas fa-graduation-cap"></i> SCool
+        </div>
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Р§С‚Рѕ С‚С‹ С…РѕС‡РµС€СЊ РІС‹СѓС‡РёС‚СЊ СЃРµРіРѕРґРЅСЏ?" id="search-input">
+            <div class="search-results" id="search-results">
+                <!-- Р РµР·СѓР»СЊС‚Р°С‚С‹ РїРѕРёСЃРєР° Р±СѓРґСѓС‚ РґРѕР±Р°РІР»СЏС‚СЊСЃСЏ СЃСЋРґР° -->
+            </div>
+        </div>
+        <div class="header-icons">
+            <!-- РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РїРµСЂРµРєР»СЋС‡Р°С‚РµР»СЏ С‚РµРјС‹ СЃ РЅР°РґРїРёСЃСЏРјРё -->
+            <div class="theme-container">
+                <span class="theme-label light">РЎРІРµС‚Р»Р°СЏ</span>
+                
+                <!-- РџРµСЂРµРєР»СЋС‡Р°С‚РµР»СЊ С‚РµРјС‹ -->
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="theme-slider"></span>
+                    <i class="fas fa-moon theme-icon moon"></i>
+                    <i class="fas fa-sun theme-icon sun"></i>
+                </label>
+                
+                <span class="theme-label dark">РўС‘РјРЅР°СЏ</span>
+            </div>
+            
+            <i class="fas fa-bell" id="notification-icon"></i>
+            <i class="fas fa-user-circle" id="profile-icon"></i>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="left-section">
+            <div class="class-selection">
+                <button class="class-btn" data-class="7">7 РєР»Р°СЃСЃ</button>
+                <button class="class-btn" data-class="8">8 РєР»Р°СЃСЃ</button>
+                <button class="class-btn" data-class="9">9 РєР»Р°СЃСЃ</button>
+            </div>
+
+            <!-- РњР°РєРµС‚ Desktop - 9 - РґР»СЏ 7 РєР»Р°СЃСЃР° -->
+            <div id="desktop9-layout" class="desktop9-section">
+                <div class="desktop-header">
+                    <button class="desktop-home-link" id="home-from-desktop9">
+                        <i class="fas fa-home"></i> РќР° РіР»Р°РІРЅСѓСЋ
+                    </button>
+                </div>
+                
+                <!-- РљР°СЂС‚РѕС‡РєР° С„РёР·РёРєРё Р‘Р•Р— РїСЂРѕРіСЂРµСЃСЃР° -->
+                <div class="subject-card" data-search="Р¤РёР·РёРєР° РЅР°СѓРєР°">
+                    <h3>Р¤РёР·РёРєР°</h3>
+                    <!-- РџСЂРѕРіСЂРµСЃСЃ-Р±Р°СЂ Рё РїСЂРѕС†РµРЅС‚С‹ РЈР‘Р РђРќР« -->
+                </div>
+
+                <div class="desktop-contact-us">
+                    <a href="mailto:support@scool.ru" class="desktop-contact-btn" title="РќР°Р¶РјРё РЅР° РјРµРЅСЏ" target="_blank">
+                        <i class="fas fa-envelope"></i> РќР°РїРёСЃР°С‚СЊ РЅР°Рј
+                    </a>
+                </div>
+            </div>
+
+            <!-- РњР°РєРµС‚ Desktop - 10 - РґР»СЏ 8 РєР»Р°СЃСЃР° -->
+            <div id="desktop10-layout" class="desktop10-section">
+                <div class="desktop-header">
+                    <button class="desktop-home-link" id="home-from-desktop10">
+                        <i class="fas fa-home"></i> РќР° РіР»Р°РІРЅСѓСЋ
+                    </button>
+                </div>
+                
+                <!-- РљР°СЂС‚РѕС‡РєР° С„РёР·РёРєРё Р‘Р•Р— РїСЂРѕРіСЂРµСЃСЃР° -->
+                <div class="subject-card" data-search="Р¤РёР·РёРєР° РЅР°СѓРєР°">
+                    <h3>Р¤РёР·РёРєР°</h3>
+                    <!-- РџСЂРѕРіСЂРµСЃСЃ-Р±Р°СЂ Рё РїСЂРѕС†РµРЅС‚С‹ РЈР‘Р РђРќР« -->
+                </div>
+
+                <div class="desktop-contact-us">
+                    <a href="mailto:support@scool.ru" class="desktop-contact-btn" title="РќР°Р¶РјРё РЅР° РјРµРЅСЏ" target="_blank">
+                        <i class="fas fa-envelope"></i> РќР°РїРёСЃР°С‚СЊ РЅР°Рј
+                    </a>
+                </div>
+            </div>
+
+            <!-- РњР°РєРµС‚ Desktop - 11 - РґР»СЏ 9 РєР»Р°СЃСЃР° -->
+            <div id="desktop11-layout" class="desktop11-section">
+                <div class="desktop-header">
+                    <button class="desktop-home-link" id="home-from-desktop11">
+                        <i class="fas fa-home"></i> РќР° РіР»Р°РІРЅСѓСЋ
+                    </button>
+                </div>
+                
+                <!-- РљР°СЂС‚РѕС‡РєР° С„РёР·РёРєРё Р‘Р•Р— РїСЂРѕРіСЂРµСЃСЃР° -->
+                <div class="subject-card" data-search="Р¤РёР·РёРєР° РЅР°СѓРєР° 9 РєР»Р°СЃСЃ">
+                    <h3>Р¤РёР·РёРєР°</h3>
+                    <!-- РџСЂРѕРіСЂРµСЃСЃ-Р±Р°СЂ Рё РїСЂРѕС†РµРЅС‚С‹ РЈР‘Р РђРќР« -->
+                </div>
+
+                <div class="desktop-contact-us">
+                    <a href="mailto:support@scool.ru" class="desktop-contact-btn" title="РќР°Р¶РјРё РЅР° РјРµРЅСЏ" target="_blank">
+                        <i class="fas fa-envelope"></i> РќР°РїРёСЃР°С‚СЊ РЅР°Рј
+                    </a>
+                </div>
+            </div>
+
+            <!-- РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ РјР°РєРµС‚ (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ) -->
+            <div id="standard-layout" class="standard-section">
+                <!-- РџСЂРѕРґРѕР»Р¶РёС‚СЊ РѕР±СѓС‡РµРЅРёРµ - РўРћР›Р¬РљРћ РІ СЃС‚Р°РЅРґР°СЂС‚РЅРѕРј РјР°РєРµС‚Рµ -->
+                <section class="section-block" data-search="РџСЂРѕРґРѕР»Р¶РёС‚СЊ РѕР±СѓС‡РµРЅРёРµ С„РёР·РёРєР°">
+                    <h2>РџСЂРѕРґРѕР»Р¶РёС‚СЊ РѕР±СѓС‡РµРЅРёРµ</h2>
+                    <div class="learning-cards">
+                        <div class="card learning-card" data-search="Р¤РёР·РёРєР° 7 РєР»Р°СЃСЃ РњРљРў РјРѕР»РµРєСѓР»СЏСЂРЅРѕ РєРёРЅРµС‚РёС‡РµСЃРєР°СЏ С‚РµРѕСЂРёСЏ">
+                            <div class="card-header">
+                                <h3>Р¤РёР·РёРєР°</h3>
+                                <span>7 РєР»Р°СЃСЃ</span>
+                            </div>
+                            <p>РњРљРў</p>
+                            <div class="progress-container">
+                                <div class="progress-fill" style="width: 95%;"></div>
+                            </div>
+                            <p class="progress-text">95% Р—Р°РІРµСЂС€РµРЅРѕ</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Р”РѕСЃС‚РёР¶РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ - РўРћР›Р¬РљРћ РІ СЃС‚Р°РЅРґР°СЂС‚РЅРѕРј РјР°РєРµС‚Рµ -->
+                <section class="section-block" data-search="Р”РѕСЃС‚РёР¶РµРЅРёСЏ СѓСЃРїРµС…Рё С‚СѓСЂРЅРёСЂ СЂРµР·СѓР»СЊС‚Р°С‚С‹">
+                    <h2 class="section-title-with-date">Р”РѕСЃС‚РёР¶РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ <span class="date">Р”Р°С‚Р°</span></h2>
+                    <div class="achievements-list">
+                        <div class="achievement-item" data-search="РћСЃРµРЅРЅРёР№ С‚СѓСЂРЅРёСЂ С„РёР·РёРєР°">
+                            <div class="achievement-info">
+                                <h3>РћСЃРµРЅРЅРёР№ С‚СѓСЂРЅРёСЂ</h3>
+                                <span class="date-value">09.11.2025</span>
+                            </div>
+                        </div>
+                        <div class="achievement-item">
+                            <p>Р¤РёР·РёРєР°</p>
+                            <div class="progress-container">
+                                <div class="progress-fill" style="width: 52%;"></div>
+                            </div>
+                            <p class="progress-text">520/1000</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- РљРЅРѕРїРєР° "РќР°РїРёСЃР°С‚СЊ РЅР°Рј" РІ СЃС‚Р°РЅРґР°СЂС‚РЅРѕРј РјР°РєРµС‚Рµ -->
+                <div class="standard-contact-us" data-search="РќР°РїРёСЃР°С‚СЊ РЅР°Рј РїРѕРґРґРµСЂР¶РєР° РїРѕРјРѕС‰СЊ РѕР±СЂР°С‚РЅР°СЏ СЃРІСЏР·СЊ">
+                    <a href="mailto:support@scool.ru" class="standard-contact-btn" title="РќР°Р¶РјРё РЅР° РјРµРЅСЏ" target="_blank">
+                        <i class="fas fa-envelope"></i> РќР°РїРёСЃР°С‚СЊ РЅР°Рј
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <aside class="right-sidebar">
+            <div class="card leaderboard" data-search="Р›РёРґРµСЂС‹ С‚СѓСЂРЅРёСЂ СЂРµР№С‚РёРЅРі С‚Р°Р±Р»РёС†Р° Р±Р°Р»Р»С‹">
+                <h3>Р›РёРґРµСЂС‹ С‚СѓСЂРЅРёСЂР°</h3>
+                <ul class="leader-list">
+                    <li class="leader-item" data-search="Р•Р»РµРЅР° Р’. Р»РёРґРµСЂ РїРµСЂРІС‹Р№ РјРµСЃС‚Рѕ 1200">
+                        <span class="rank">1</span>
+                        <div class="avatar" style="background-image: url('https://via.placeholder.com/30/ff5722/ffffff?text=E');"></div>
+                        <span class="name">Р•Р»РµРЅР° Р’.</span>
+                        <span class="score">1200</span>
+                    </li>
+                    <li class="leader-item" data-search="Р’Р°СЃСЏ РІС‚РѕСЂРѕРµ РјРµСЃС‚Рѕ 1000">
+                        <span class="rank">2</span>
+                        <div class="avatar" style="background-image: url('https://via.placeholder.com/30/4caf50/ffffff?text=B');"></div>
+                        <span class="name">Р’Р°СЃСЏ</span>
+                        <span class="score">1000</span>
+                    </li>
+                    <li class="leader-item" data-search="Р•РІРіРµРЅРёР№ С‚СЂРµС‚СЊРµ РјРµСЃС‚Рѕ 900">
+                        <span class="rank">3</span>
+                        <div class="avatar" style="background-image: url('https://via.placeholder.com/30/2196f3/ffffff?text=E');"></div>
+                        <span class="name">Р•РІРіРµРЅРёР№</span>
+                        <span class="score">900</span>
+                    </li>
+                </ul>
+                <button class="btn btn-full" id="full-table-btn">Р’СЃСЏ С‚Р°Р±Р»РёС†Р°</button>
+            </div>
+
+            <div class="card advertisement" data-search="Р РµРєР»Р°РјР° РѕР±СЉСЏРІР»РµРЅРёРµ">
+                <h3>Р РµРєР»Р°РјР°</h3>
+            </div>
+        </aside>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
