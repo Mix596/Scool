@@ -5,11 +5,12 @@ builder = "nixpacks"
 
 [[services]]
 name = "web"
-port = 3000
+port = 8080
 protocol = "tcp"
 
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 startTimeout = 120
+
 '@ | Out-File railway.toml -Encoding UTF8
