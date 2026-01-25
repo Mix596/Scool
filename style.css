@@ -695,6 +695,115 @@ body.dark-theme .highlight {
     color: #ffcc80;
 }
 
+/* =============== СТИЛИ ДЛЯ ЦЕНТРАЛЬНОЙ ПЛАШКИ =============== */
+.center-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    width: 90%;
+    max-width: 450px;
+    pointer-events: none;
+}
+
+.center-message.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+.center-message-content {
+    background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+    color: white;
+    padding: 24px 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(63, 81, 181, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.center-message-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ff5722, #ff9800);
+}
+
+.center-message-icon {
+    font-size: 28px;
+    color: #ffcc00;
+    min-width: 40px;
+    text-align: center;
+}
+
+.center-message-text {
+    flex: 1;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.center-message-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.center-message-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+/* Темная тема для плашки */
+body.dark-theme .center-message-content {
+    background: linear-gradient(135deg, #2d3748, #4a5568);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-theme .center-message-content::before {
+    background: linear-gradient(90deg, #87CEEB, #5cb4e0);
+}
+
+body.dark-theme .center-message-icon {
+    color: #87CEEB;
+}
+
+/* Анимация пульсации */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 10px 30px rgba(63, 81, 181, 0.3);
+    }
+    50% {
+        box-shadow: 0 10px 40px rgba(63, 81, 181, 0.5), 0 0 20px rgba(255, 152, 0, 0.3);
+    }
+}
+
+.center-message.show .center-message-content {
+    animation: pulse-glow 2s infinite;
+}
+
 /* Темная тема */
 body.dark-theme {
     background-color: #121212;
@@ -905,5 +1014,26 @@ body.dark-theme .advertisement {
     .standard-contact-btn {
         padding: 10px 15px;
         font-size: 1em;
+    }
+    
+    /* Адаптивность для плашки на мобильных */
+    .center-message-content {
+        padding: 20px 24px;
+        gap: 12px;
+    }
+    
+    .center-message-icon {
+        font-size: 24px;
+        min-width: 36px;
+    }
+    
+    .center-message-text {
+        font-size: 16px;
+    }
+    
+    .center-message-close {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
     }
 }
