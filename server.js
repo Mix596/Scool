@@ -55,7 +55,8 @@ app.get('*', (req, res) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 Healthcheck: http://0.0.0.0:${PORT}/health`);
-  console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Healthcheck: http://0.0.0.0:${PORT}/health`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
