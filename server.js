@@ -3,26 +3,32 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 
-// ========== НАСТРОЙКА ЛОГИРОВАНИЯ ==========
+// ========== НАСТРОЙКА ЛОГИРОВАНИЯ И ПОРТА ==========
 console.log('='.repeat(60));
 console.log(' SCool Server Starting...');
 console.log('='.repeat(60));
 
+// Railway автоматически устанавливает PORT
+const PORT = process.env.PORT || 8080;
+
+console.log('\n🔧 RAILWAY PORT CONFIGURATION:');
+console.log(`   Railway provided PORT: ${process.env.PORT || 'NOT SET (using 8080)'}`);
+console.log(`   Server will use port: ${PORT}`);
+console.log(`   Listen address: 0.0.0.0`);
+console.log('='.repeat(60));
+
 // Проверяем переменные окружения Railway
-console.log('\n🔧 RAILWAY ENVIRONMENT CHECK:');
-console.log('1. PORT:', process.env.PORT || '3000 (default)');
-console.log('2. NODE_ENV:', process.env.NODE_ENV || 'development');
-console.log('3. DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('\n🔍 ENVIRONMENT CHECK:');
+console.log(`1. NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`2. DATABASE_URL: ${process.env.DATABASE_URL ? 'SET (' + process.env.DATABASE_URL.length + ' chars)' : 'NOT SET'}`);
 if (process.env.DATABASE_URL) {
-  const dbUrl = process.env.DATABASE_URL;
-  console.log('4. DATABASE_URL type:', dbUrl.includes('postgresql://') ? 'PostgreSQL' : 'Unknown');
-  console.log('5. DATABASE_URL preview:', dbUrl.substring(0, 20) + '...');
+  console.log(`3. DB Type: ${process.env.DATABASE_URL.includes('postgresql://') ? 'PostgreSQL' : 'Unknown'}`);
 }
 
 // Проверяем наличие pg модуля
 try {
   const pg = require('pg');
-  console.log(' pg module:', require('pg/package.json').version);
+  console.log(` pg module: ${require('pg/package.json').version}`);
 } catch (err) {
   console.error(' ERROR loading pg module:', err.message);
   console.error('Full error:', err);
@@ -34,10 +40,6 @@ console.log('='.repeat(60));
 const { Pool } = require('pg');
 
 const app = express();
-
-// ========== КОНФИГУРАЦИЯ ПОРТА ==========
-// Railway автоматически устанавливает PORT
-const PORT = process.env.PORT || 3000;
 
 // ========== MIDDLEWARE ==========
 app.use(cors({
@@ -68,8 +70,7 @@ async function initializeDatabase() {
       ssl: {
         rejectUnauthorized: false
       },
-      // Оптимизация для Railway
-      max: 10, // максимальное количество клиентов в пуле
+      max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000
     };
@@ -114,7 +115,6 @@ async function createTables() {
   try {
     console.log('\n CREATING DATABASE TABLES...');
     
-    // Таблица leaderboard
     await pool.query(`
       CREATE TABLE IF NOT EXISTS leaderboard (
         id SERIAL PRIMARY KEY,
@@ -128,7 +128,6 @@ async function createTables() {
     `);
     console.log(' leaderboard table ready');
 
-    // Таблица subjects
     await pool.query(`
       CREATE TABLE IF NOT EXISTS subjects (
         id SERIAL PRIMARY KEY,
@@ -142,7 +141,6 @@ async function createTables() {
     `);
     console.log(' subjects table ready');
 
-    // Таблица users
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -156,12 +154,10 @@ async function createTables() {
 
     console.log(' DATABASE TABLES READY');
     
-    // Добавляем тестовые данные если таблицы пустые
     await seedDatabase();
     
   } catch (err) {
     console.error(' DATABASE SETUP ERROR:', err.message);
-    console.error('Full error:', err);
   }
 }
 
@@ -172,7 +168,6 @@ async function seedDatabase() {
   try {
     console.log('\n SEEDING DATABASE...');
     
-    // Проверяем есть ли данные в leaderboard
     const leaderboardResult = await pool.query('SELECT COUNT(*) FROM leaderboard');
     const leaderboardCount = parseInt(leaderboardResult.rows[0].count);
     
@@ -186,12 +181,9 @@ async function seedDatabase() {
         ('alex_t', 'Alex T.', 800, 5)
         ON CONFLICT (username) DO NOTHING
       `);
-      console.log(`   Added ${Math.min(5, 5)} leaderboard entries`);
-    } else {
-      console.log(`   Leaderboard: ${leaderboardCount} entries found`);
+      console.log(`   Added leaderboard entries`);
     }
     
-    // Проверяем subjects
     const subjectsResult = await pool.query('SELECT COUNT(*) FROM subjects');
     const subjectsCount = parseInt(subjectsResult.rows[0].count);
     
@@ -207,9 +199,7 @@ async function seedDatabase() {
         ('Informatics', 10, 92)
         ON CONFLICT DO NOTHING
       `);
-      console.log(`   Added ${Math.min(7, 7)} subject entries`);
-    } else {
-      console.log(`   Subjects: ${subjectsCount} entries found`);
+      console.log(`   Added subject entries`);
     }
     
     console.log(' SEEDING COMPLETE');
@@ -221,28 +211,25 @@ async function seedDatabase() {
 
 // ========== ПУТИ К ФАЙЛАМ ==========
 const projectRoot = process.cwd();
-const backendDir = __dirname;
 const frontendPath = path.join(projectRoot, 'frontend');
 const frontendExists = fs.existsSync(frontendPath);
 
 console.log('\n FILE SYSTEM PATHS:');
 console.log(`   Project Root: ${projectRoot}`);
-console.log(`   Backend Dir:  ${backendDir}`);
 console.log(`   Frontend Dir: ${frontendPath}`);
 console.log(`   Frontend Exists: ${frontendExists ? ' YES' : ' NO'}`);
 
 if (frontendExists) {
   console.log('\n   FRONTEND FILES:');
   const files = fs.readdirSync(frontendPath);
-  files.slice(0, 10).forEach(file => console.log(`      ${file}`));
-  if (files.length > 10) console.log(`      ... and ${files.length - 10} more`);
+  files.slice(0, 5).forEach(file => console.log(`      ${file}`));
 }
 console.log('='.repeat(60));
 
 // ========== СТАТИЧЕСКИЕ ФАЙЛЫ ==========
 if (frontendExists) {
   app.use(express.static(frontendPath, {
-    maxAge: '1d', // Кэширование в браузере
+    maxAge: '1d',
     setHeaders: (res, path) => {
       if (path.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache');
@@ -289,7 +276,7 @@ app.get('/health', async (req, res) => {
     health.database = 'error';
     health.database_error = err.message;
     health.status = 'degraded';
-    res.status(200).json(health); // Всегда 200 для Railway health check
+    res.status(200).json(health);
   }
 });
 
@@ -389,7 +376,6 @@ app.get('/api/subjects/:class', async (req, res) => {
   const classNum = parseInt(req.params.class);
   
   if (!pool) {
-    // Fallback данные
     const fallbackData = [
       { id: 1, name: 'Physics', class: classNum, progress: 95 },
       { id: 2, name: 'Mathematics', class: classNum, progress: 88 },
@@ -406,7 +392,6 @@ app.get('/api/subjects/:class', async (req, res) => {
     );
     
     if (result.rows.length === 0) {
-      // Возвращаем стандартные предметы
       const defaultSubjects = [
         { id: 1, name: 'Physics', class: classNum, progress: 0 },
         { id: 2, name: 'Mathematics', class: classNum, progress: 0 },
@@ -478,17 +463,15 @@ app.post('/api/score', async (req, res) => {
     if (!username || !name || score === undefined) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Missing required fields: username, name, score' 
+        message: 'Missing required fields' 
       });
     }
     
-    // Начинаем транзакцию
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
       
-      // Вставляем или обновляем запись
       await client.query(`
         INSERT INTO leaderboard (username, name, score, rank) 
         VALUES ($1, $2, $3, 999)
@@ -496,7 +479,6 @@ app.post('/api/score', async (req, res) => {
         DO UPDATE SET score = $3, updated_at = CURRENT_TIMESTAMP
       `, [username, name, score]);
       
-      // Обновляем ранги
       await client.query(`
         WITH ranked AS (
           SELECT username, 
@@ -512,7 +494,6 @@ app.post('/api/score', async (req, res) => {
       
       await client.query('COMMIT');
       
-      // Получаем обновленный рейтинг
       const result = await client.query(
         'SELECT * FROM leaderboard WHERE username = $1',
         [username]
@@ -618,7 +599,6 @@ if (frontendExists) {
 }
 
 // ========== ERROR HANDLING ==========
-// 404 для API
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
     error: 'API endpoint not found',
@@ -627,7 +607,6 @@ app.use('/api/*', (req, res) => {
   });
 });
 
-// 404 для всех остальных
 app.use((req, res) => {
   if (frontendExists && !req.path.startsWith('/api/')) {
     res.sendFile(path.join(frontendPath, 'index.html'));
@@ -645,7 +624,6 @@ app.use((req, res) => {
   }
 });
 
-// Глобальный обработчик ошибок
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
@@ -669,26 +647,31 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   
   if (process.env.DATABASE_URL) {
     console.log(`\n💾 DATABASE:       ${pool ? ' CONNECTED' : ' DISCONNECTED'}`);
+    if (pool) {
+      console.log(`   URL configured: ${process.env.DATABASE_URL.substring(0, 30)}...`);
+    }
   } else {
-    console.log(`\n💾 DATABASE:         LOCAL MODE`);
+    console.log(`\n💾 DATABASE:         LOCAL MODE (no DATABASE_URL)`);
   }
   
   if (frontendExists) {
-    console.log(`\n FRONTEND:        DETECTED`);
-    console.log(`   App:           http://localhost:${PORT}/app`);
-    console.log(`   Static files:  http://localhost:${PORT}/style.css`);
+    console.log(`\n FRONTEND:       DETECTED`);
+    console.log(`    App:         http://localhost:${PORT}/app`);
+    console.log(`    CSS:         http://localhost:${PORT}/style.css`);
+    console.log(`     JS:          http://localhost:${PORT}/script.js`);
   } else {
     console.log(`\n FRONTEND:        NOT FOUND`);
   }
   
   console.log('\n' + '='.repeat(60));
-  console.log('Ready for Railway deployment!');
+  console.log(' Ready for Railway deployment!');
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('='.repeat(60));
 });
 
 // ========== GRACEFUL SHUTDOWN ==========
 process.on('SIGTERM', () => {
-  console.log('\n🔻 Received SIGTERM - shutting down gracefully...');
+  console.log('\n Received SIGTERM - shutting down gracefully...');
   server.close(() => {
     console.log('   HTTP server closed');
     if (pool) {
