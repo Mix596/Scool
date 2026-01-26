@@ -3,27 +3,58 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 
-// ========== НАСТРОЙКА ЛОГИРОВАНИЯ И ПОРТА ==========
-console.log('='.repeat(60));
-console.log(' SCool Server Starting...');
-console.log('='.repeat(60));
-
-// Railway автоматически устанавливает PORT
-const PORT = process.env.PORT || 8080;
-
-console.log('\n🔧 RAILWAY PORT CONFIGURATION:');
-console.log(`   Railway provided PORT: ${process.env.PORT || 'NOT SET (using 8080)'}`);
-console.log(`   Server will use port: ${PORT}`);
-console.log(`   Listen address: 0.0.0.0`);
-console.log('='.repeat(60));
-
-// Проверяем переменные окружения Railway
-console.log('\n🔍 ENVIRONMENT CHECK:');
-console.log(`1. NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-console.log(`2. DATABASE_URL: ${process.env.DATABASE_URL ? 'SET (' + process.env.DATABASE_URL.length + ' chars)' : 'NOT SET'}`);
-if (process.env.DATABASE_URL) {
-  console.log(`3. DB Type: ${process.env.DATABASE_URL.includes('postgresql://') ? 'PostgreSQL' : 'Unknown'}`);
+// ========== RAILWAY PORT FIX ==========
+// Функция для надежного получения порта в Railway
+function getRailwayPort() {
+  console.log('🔍 Checking Railway environment...');
+  
+  // Список возможных переменных порта в Railway
+  const portCandidates = [
+    process.env.PORT,                    // Основная переменная
+    process.env.RAILWAY_PORT,           // Railway специфичная
+    process.env.PORT_NUMBER,            // Альтернативное название
+    process.env.HTTP_PORT,              // HTTP порт
+    process.env.APP_PORT,               // Порт приложения
+    process.env.SERVER_PORT             // Порт сервера
+  ];
+  
+  // Проверяем каждую переменную
+  for (let i = 0; i < portCandidates.length; i++) {
+    const port = portCandidates[i];
+    if (port && !isNaN(parseInt(port))) {
+      console.log(` Found port in candidate ${i}: ${port}`);
+      return parseInt(port);
+    }
+  }
+  
+  // Если ничего не найдено, проверяем все переменные окружения
+  console.log('🔍 Checking all environment variables...');
+  const allEnvVars = Object.keys(process.env);
+  for (const key of allEnvVars) {
+    if (key.toUpperCase().includes('PORT') && 
+        process.env[key] && 
+        !isNaN(parseInt(process.env[key]))) {
+      console.log(` Found port in ${key}: ${process.env[key]}`);
+      return parseInt(process.env[key]);
+    }
+  }
+  
+  // Возвращаем порт по умолчанию
+  console.log('  No Railway port found, using default: 8080');
+  return 8080;
 }
+
+// Получаем порт
+const PORT = getRailwayPort();
+
+console.log('='.repeat(60));
+console.log(' SCool Server - Railway Deployment');
+console.log('='.repeat(60));
+console.log(` Railway PORT variable: "${process.env.PORT}"`);
+console.log(` Using PORT: ${PORT}`);
+console.log(` NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(` Listen address: 0.0.0.0`);
+console.log('='.repeat(60));
 
 // Проверяем наличие pg модуля
 try {
@@ -34,7 +65,6 @@ try {
   console.error('Full error:', err);
   process.exit(1);
 }
-console.log('='.repeat(60));
 
 // Импортируем Pool после проверки
 const { Pool } = require('pg');
@@ -52,7 +82,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ========== БАЗА ДАННЫХ ==========
-console.log('\n DATABASE CONFIGURATION:');
+console.log('\n💾 DATABASE CONFIGURATION:');
 let pool = null;
 
 async function initializeDatabase() {
@@ -62,14 +92,14 @@ async function initializeDatabase() {
   }
 
   try {
-    console.log('Connecting to Railway PostgreSQL...');
+    console.log('🔌 Connecting to Railway PostgreSQL...');
     
     // Railway PostgreSQL требует SSL
     const poolConfig = {
       connectionString: process.env.DATABASE_URL,
-      ssl: {
+      ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false
-      },
+      } : false,
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000
@@ -90,9 +120,9 @@ async function initializeDatabase() {
     const versionResult = await client.query('SELECT version()');
     const dbInfo = await client.query('SELECT current_database(), current_user');
     
-    console.log(`   Database: ${dbInfo.rows[0].current_database}`);
-    console.log(`   User: ${dbInfo.rows[0].current_user}`);
-    console.log(`   PostgreSQL: ${versionResult.rows[0].version.split(',')[0]}`);
+    console.log(`    Database: ${dbInfo.rows[0].current_database}`);
+    console.log(`    User: ${dbInfo.rows[0].current_user}`);
+    console.log(`    PostgreSQL: ${versionResult.rows[0].version.split(',')[0]}`);
     
     client.release();
     
@@ -181,7 +211,7 @@ async function seedDatabase() {
         ('alex_t', 'Alex T.', 800, 5)
         ON CONFLICT (username) DO NOTHING
       `);
-      console.log(`   Added leaderboard entries`);
+      console.log(`   📊 Added leaderboard entries`);
     }
     
     const subjectsResult = await pool.query('SELECT COUNT(*) FROM subjects');
@@ -199,7 +229,7 @@ async function seedDatabase() {
         ('Informatics', 10, 92)
         ON CONFLICT DO NOTHING
       `);
-      console.log(`   Added subject entries`);
+      console.log(`    Added subject entries`);
     }
     
     console.log(' SEEDING COMPLETE');
@@ -215,12 +245,12 @@ const frontendPath = path.join(projectRoot, 'frontend');
 const frontendExists = fs.existsSync(frontendPath);
 
 console.log('\n FILE SYSTEM PATHS:');
-console.log(`   Project Root: ${projectRoot}`);
+console.log(`    Project Root: ${projectRoot}`);
 console.log(`   Frontend Dir: ${frontendPath}`);
-console.log(`   Frontend Exists: ${frontendExists ? ' YES' : ' NO'}`);
+console.log(`    Frontend Exists: ${frontendExists ? ' YES' : ' NO'}`);
 
 if (frontendExists) {
-  console.log('\n   FRONTEND FILES:');
+  console.log('\n   📄 FRONTEND FILES:');
   const files = fs.readdirSync(frontendPath);
   files.slice(0, 5).forEach(file => console.log(`      ${file}`));
 }
@@ -252,6 +282,8 @@ app.get('/health', async (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'scool-api',
+    port: PORT,
+    railway_port: process.env.PORT,
     environment: process.env.NODE_ENV || 'development',
     database: 'checking'
   };
@@ -289,6 +321,8 @@ app.get('/', (req, res) => {
     service: 'SCool API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
+    port: PORT,
+    railway_port: process.env.PORT,
     documentation: {
       health: '/health',
       api: '/api/health',
@@ -311,6 +345,7 @@ app.get('/api/health', async (req, res) => {
     status: 'operational',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
+    port: PORT,
     endpoints: {
       subjects: 'active',
       leaderboard: 'active',
@@ -603,7 +638,8 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ 
     error: 'API endpoint not found',
     path: req.path,
-    method: req.method
+    method: req.method,
+    port: PORT
   });
 });
 
@@ -613,6 +649,7 @@ app.use((req, res) => {
   } else {
     res.status(404).json({ 
       error: 'Not found',
+      port: PORT,
       available_endpoints: [
         '/',
         '/health',
@@ -628,6 +665,7 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
     error: 'Internal server error',
+    port: PORT,
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
@@ -635,27 +673,31 @@ app.use((err, req, res, next) => {
 // ========== ЗАПУСК СЕРВЕРА ==========
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n' + '='.repeat(60));
-  console.log(` SERVER RUNNING: http://0.0.0.0:${PORT}`);
+  console.log(` SERVER RUNNING ON PORT: ${PORT}`);
+  console.log(` Internal URL: http://0.0.0.0:${PORT}`);
+  console.log(` Local URL:    http://localhost:${PORT}`);
   console.log('='.repeat(60));
-  console.log('\n ENDPOINTS:');
-  console.log(`    Main API:     http://localhost:${PORT}/`);
-  console.log(`     Health:       http://localhost:${PORT}/health`);
+  console.log('\n📡 PUBLIC ENDPOINTS:');
+  console.log(`    Main API:     https://YOUR_PROJECT.railway.app/`);
+  console.log(`     Health:       https://YOUR_PROJECT.railway.app/health`);
+  console.log(`    Subjects:     https://YOUR_PROJECT.railway.app/api/subjects/7`);
+  console.log(`    Leaderboard:  https://YOUR_PROJECT.railway.app/api/leaderboard`);
+  console.log(`    Frontend:     https://YOUR_PROJECT.railway.app/app`);
+  console.log('\n🔧 INTERNAL ENDPOINTS:');
   console.log(`    DB Check:     http://localhost:${PORT}/api/db-check`);
-  console.log(`    Subjects:     http://localhost:${PORT}/api/subjects/7`);
-  console.log(`    Leaderboard:  http://localhost:${PORT}/api/leaderboard`);
   console.log(`    Top 10:       http://localhost:${PORT}/api/top10`);
   
   if (process.env.DATABASE_URL) {
-    console.log(`\n💾 DATABASE:       ${pool ? ' CONNECTED' : ' DISCONNECTED'}`);
+    console.log(`\n DATABASE:       ${pool ? ' CONNECTED' : ' DISCONNECTED'}`);
     if (pool) {
-      console.log(`   URL configured: ${process.env.DATABASE_URL.substring(0, 30)}...`);
+      console.log(`    URL: ${process.env.DATABASE_URL.substring(0, 30)}...`);
     }
   } else {
-    console.log(`\n💾 DATABASE:         LOCAL MODE (no DATABASE_URL)`);
+    console.log(`\n DATABASE:         LOCAL MODE (no DATABASE_URL)`);
   }
   
   if (frontendExists) {
-    console.log(`\n FRONTEND:       DETECTED`);
+    console.log(`\n FRONTEND:        DETECTED`);
     console.log(`    App:         http://localhost:${PORT}/app`);
     console.log(`    CSS:         http://localhost:${PORT}/style.css`);
     console.log(`     JS:          http://localhost:${PORT}/script.js`);
@@ -664,14 +706,15 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   }
   
   console.log('\n' + '='.repeat(60));
-  console.log(' Ready for Railway deployment!');
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(' READY FOR RAILWAY DEPLOYMENT');
+  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(` Port detection: ${process.env.PORT ? 'Railway' : 'Default (8080)'}`);
   console.log('='.repeat(60));
 });
 
 // ========== GRACEFUL SHUTDOWN ==========
 process.on('SIGTERM', () => {
-  console.log('\n Received SIGTERM - shutting down gracefully...');
+  console.log('\n🔻 Received SIGTERM - shutting down gracefully...');
   server.close(() => {
     console.log('   HTTP server closed');
     if (pool) {
