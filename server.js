@@ -1,3 +1,47 @@
+// ========== RAILWAY EMERGENCY PORT FIX ==========
+// Принудительно проверяем все возможные источники
+
+console.log('='.repeat(60));
+console.log('🚨 RAILWAY EMERGENCY PORT FIX');
+console.log('='.repeat(60));
+
+// Показываем ВСЕ переменные окружения для отладки
+console.log('ALL ENVIRONMENT VARIABLES:');
+for (const key in process.env) {
+  if (key.includes('PORT') || key.includes('RAILWAY')) {
+    console.log(`  ${key}=${process.env[key]}`);
+  }
+}
+
+// Пытаемся найти порт разными способами
+let detectedPort = null;
+
+// Способ 1: Проверяем стандартную переменную
+if (process.env.PORT) {
+  detectedPort = parseInt(process.env.PORT);
+  console.log(` Found port in process.env.PORT: ${detectedPort}`);
+} 
+// Способ 2: Проверяем аргументы командной строки
+else if (process.argv.some(arg => arg.includes('port') || arg.includes('PORT'))) {
+  for (const arg of process.argv) {
+    if (arg.includes('=') && arg.includes('port')) {
+      detectedPort = parseInt(arg.split('=')[1]);
+      console.log(` Found port in command line: ${detectedPort}`);
+      break;
+    }
+  }
+}
+// Способ 3: Используем порт по умолчанию для Railway
+else {
+  detectedPort = 8080;
+  console.log(`  No port detected, using Railway default: ${detectedPort}`);
+}
+
+const PORT = detectedPort;
+console.log(` FINAL PORT: ${PORT}`);
+console.log('='.repeat(60));
+
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -742,3 +786,4 @@ process.on('SIGINT', () => {
     }
   });
 });
+
