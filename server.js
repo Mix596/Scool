@@ -1,11 +1,8 @@
 // ========== RAILWAY EMERGENCY PORT FIX ==========
-// Принудительно проверяем все возможные источники
-
 console.log('='.repeat(60));
-console.log('🚨 RAILWAY EMERGENCY PORT FIX');
+console.log(' RAILWAY EMERGENCY PORT FIX');
 console.log('='.repeat(60));
 
-// Показываем ВСЕ переменные окружения для отладки
 console.log('ALL ENVIRONMENT VARIABLES:');
 for (const key in process.env) {
   if (key.includes('PORT') || key.includes('RAILWAY')) {
@@ -13,16 +10,12 @@ for (const key in process.env) {
   }
 }
 
-// Пытаемся найти порт разными способами
 let detectedPort = null;
 
-// Способ 1: Проверяем стандартную переменную
 if (process.env.PORT) {
   detectedPort = parseInt(process.env.PORT);
   console.log(` Found port in process.env.PORT: ${detectedPort}`);
-} 
-// Способ 2: Проверяем аргументы командной строки
-else if (process.argv.some(arg => arg.includes('port') || arg.includes('PORT'))) {
+} else if (process.argv.some(arg => arg.includes('port') || arg.includes('PORT'))) {
   for (const arg of process.argv) {
     if (arg.includes('=') && arg.includes('port')) {
       detectedPort = parseInt(arg.split('=')[1]);
@@ -30,92 +23,39 @@ else if (process.argv.some(arg => arg.includes('port') || arg.includes('PORT')))
       break;
     }
   }
-}
-// Способ 3: Используем порт по умолчанию для Railway
-else {
+} else {
   detectedPort = 8080;
   console.log(`  No port detected, using Railway default: ${detectedPort}`);
 }
 
-const PORT = detectedPort;
-console.log(` FINAL PORT: ${PORT}`);
 console.log('='.repeat(60));
-
+console.log(' SCool Server - Railway Deployment');
+console.log('='.repeat(60));
+console.log(` Railway PORT variable: "${process.env.PORT}"`);
+console.log(` Using PORT: ${detectedPort}`);
+console.log(` NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(` Listen address: 0.0.0.0`);
+console.log('='.repeat(60));
 
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 
-// ========== RAILWAY PORT FIX ==========
-// Функция для надежного получения порта в Railway
-function getRailwayPort() {
-  console.log('🔍 Checking Railway environment...');
-  
-  // Список возможных переменных порта в Railway
-  const portCandidates = [
-    process.env.PORT,                    // Основная переменная
-    process.env.RAILWAY_PORT,           // Railway специфичная
-    process.env.PORT_NUMBER,            // Альтернативное название
-    process.env.HTTP_PORT,              // HTTP порт
-    process.env.APP_PORT,               // Порт приложения
-    process.env.SERVER_PORT             // Порт сервера
-  ];
-  
-  // Проверяем каждую переменную
-  for (let i = 0; i < portCandidates.length; i++) {
-    const port = portCandidates[i];
-    if (port && !isNaN(parseInt(port))) {
-      console.log(` Found port in candidate ${i}: ${port}`);
-      return parseInt(port);
-    }
-  }
-  
-  // Если ничего не найдено, проверяем все переменные окружения
-  console.log('🔍 Checking all environment variables...');
-  const allEnvVars = Object.keys(process.env);
-  for (const key of allEnvVars) {
-    if (key.toUpperCase().includes('PORT') && 
-        process.env[key] && 
-        !isNaN(parseInt(process.env[key]))) {
-      console.log(` Found port in ${key}: ${process.env[key]}`);
-      return parseInt(process.env[key]);
-    }
-  }
-  
-  // Возвращаем порт по умолчанию
-  console.log('  No Railway port found, using default: 8080');
-  return 8080;
-}
-
-// Получаем порт
-const PORT = getRailwayPort();
-
-console.log('='.repeat(60));
-console.log(' SCool Server - Railway Deployment');
-console.log('='.repeat(60));
-console.log(` Railway PORT variable: "${process.env.PORT}"`);
-console.log(` Using PORT: ${PORT}`);
-console.log(` NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-console.log(` Listen address: 0.0.0.0`);
-console.log('='.repeat(60));
-
-// Проверяем наличие pg модуля
+// Проверяем наличие mysql2 модуля
 try {
-  const pg = require('pg');
-  console.log(` pg module: ${require('pg/package.json').version}`);
+  const mysql2 = require('mysql2/promise');
+  console.log(` mysql2 module: ${require('mysql2/package.json').version}`);
 } catch (err) {
-  console.error(' ERROR loading pg module:', err.message);
+  console.error(' ERROR loading mysql2 module:', err.message);
   console.error('Full error:', err);
   process.exit(1);
 }
 
-// Импортируем Pool после проверки
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 
 const app = express();
 
-// ========== MIDDLEWARE ==========
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -136,53 +76,47 @@ async function initializeDatabase() {
   }
 
   try {
-    console.log('🔌 Connecting to Railway PostgreSQL...');
+    console.log('🔌 Connecting to Railway MySQL...');
     
-    // Railway PostgreSQL требует SSL
+    const dbUrl = process.env.DATABASE_URL;
+    console.log(`  Connection string: ${dbUrl.substring(0, 30)}...`);
+    
     const poolConfig = {
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? {
+      uri: dbUrl,
+      ssl: {
         rejectUnauthorized: false
-      } : false,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000
+      },
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 10000
     };
 
-    pool = new Pool(poolConfig);
+    pool = mysql.createPool(poolConfig);
     
-    // Обработчик ошибок пула
-    pool.on('error', (err) => {
-      console.error('Unexpected database pool error:', err);
-    });
-
-    // Тестируем подключение
-    const client = await pool.connect();
-    console.log(' DATABASE CONNECTED');
+    const connection = await pool.getConnection();
+    console.log('  DATABASE CONNECTED');
     
-    // Получаем информацию о БД
-    const versionResult = await client.query('SELECT version()');
-    const dbInfo = await client.query('SELECT current_database(), current_user');
+    const [versionRows] = await connection.query('SELECT VERSION() as version');
+    const [dbRows] = await connection.query('SELECT DATABASE() as db, USER() as user');
     
-    console.log(`    Database: ${dbInfo.rows[0].current_database}`);
-    console.log(`    User: ${dbInfo.rows[0].current_user}`);
-    console.log(`    PostgreSQL: ${versionResult.rows[0].version.split(',')[0]}`);
+    console.log(`    Database: ${dbRows[0].db}`);
+    console.log(`    User: ${dbRows[0].user}`);
+    console.log(`    MySQL: ${versionRows[0].version}`);
     
-    client.release();
+    connection.release();
     
-    // Создаем таблицы
     await createTables();
     
     return pool;
     
   } catch (err) {
-    console.error(' DATABASE CONNECTION FAILED:', err.message);
+    console.error('  DATABASE CONNECTION FAILED:', err.message);
     console.log('  Running without database connection');
     return null;
   }
 }
 
-// Функция создания таблиц
 async function createTables() {
   if (!pool) return;
   
@@ -191,38 +125,40 @@ async function createTables() {
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS leaderboard (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         name VARCHAR(100) NOT NULL,
-        score INTEGER DEFAULT 0,
-        rank INTEGER DEFAULT 999,
+        score INT DEFAULT 0,
+        rank INT DEFAULT 999,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log(' leaderboard table ready');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS subjects (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
-        class INTEGER NOT NULL,
-        progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+        class INT NOT NULL,
+        progress INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(name, class)
-      )
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT progress_check CHECK (progress >= 0 AND progress <= 100),
+        UNIQUE KEY unique_subject_class (name, class)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log(' subjects table ready');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         email VARCHAR(100),
-        class INTEGER CHECK (class >= 1 AND class <= 11),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+        class INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT class_check CHECK (class >= 1 AND class <= 11)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log(' users table ready');
 
@@ -235,15 +171,14 @@ async function createTables() {
   }
 }
 
-// Добавление тестовых данных
 async function seedDatabase() {
   if (!pool) return;
   
   try {
     console.log('\n SEEDING DATABASE...');
     
-    const leaderboardResult = await pool.query('SELECT COUNT(*) FROM leaderboard');
-    const leaderboardCount = parseInt(leaderboardResult.rows[0].count);
+    const [leaderboardResult] = await pool.query('SELECT COUNT(*) as count FROM leaderboard');
+    const leaderboardCount = parseInt(leaderboardResult[0].count);
     
     if (leaderboardCount === 0) {
       await pool.query(`
@@ -253,13 +188,16 @@ async function seedDatabase() {
         ('evgeniy', 'Evgeniy S.', 900, 3),
         ('maria_k', 'Maria K.', 850, 4),
         ('alex_t', 'Alex T.', 800, 5)
-        ON CONFLICT (username) DO NOTHING
+        ON DUPLICATE KEY UPDATE 
+          name = VALUES(name),
+          score = VALUES(score),
+          rank = VALUES(rank)
       `);
       console.log(`   📊 Added leaderboard entries`);
     }
     
-    const subjectsResult = await pool.query('SELECT COUNT(*) FROM subjects');
-    const subjectsCount = parseInt(subjectsResult.rows[0].count);
+    const [subjectsResult] = await pool.query('SELECT COUNT(*) as count FROM subjects');
+    const subjectsCount = parseInt(subjectsResult[0].count);
     
     if (subjectsCount === 0) {
       await pool.query(`
@@ -271,7 +209,8 @@ async function seedDatabase() {
         ('Physics', 9, 60),
         ('Biology', 9, 85),
         ('Informatics', 10, 92)
-        ON CONFLICT DO NOTHING
+        ON DUPLICATE KEY UPDATE 
+          progress = VALUES(progress)
       `);
       console.log(`    Added subject entries`);
     }
@@ -283,7 +222,6 @@ async function seedDatabase() {
   }
 }
 
-// ========== ПУТИ К ФАЙЛАМ ==========
 const projectRoot = process.cwd();
 const frontendPath = path.join(projectRoot, 'frontend');
 const frontendExists = fs.existsSync(frontendPath);
@@ -293,14 +231,6 @@ console.log(`    Project Root: ${projectRoot}`);
 console.log(`   Frontend Dir: ${frontendPath}`);
 console.log(`    Frontend Exists: ${frontendExists ? ' YES' : ' NO'}`);
 
-if (frontendExists) {
-  console.log('\n   📄 FRONTEND FILES:');
-  const files = fs.readdirSync(frontendPath);
-  files.slice(0, 5).forEach(file => console.log(`      ${file}`));
-}
-console.log('='.repeat(60));
-
-// ========== СТАТИЧЕСКИЕ ФАЙЛЫ ==========
 if (frontendExists) {
   app.use(express.static(frontendPath, {
     maxAge: '1d',
@@ -313,20 +243,19 @@ if (frontendExists) {
   console.log(' Static files configured');
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ==========
 initializeDatabase().then(() => {
   console.log('\n DATABASE INITIALIZATION COMPLETE');
 }).catch(err => {
   console.error(' DATABASE INIT FAILED:', err);
 });
 
-// ========== HEALTH CHECK (для Railway) ==========
+// ========== HEALTH CHECK ==========
 app.get('/health', async (req, res) => {
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'scool-api',
-    port: PORT,
+    port: detectedPort,
     railway_port: process.env.PORT,
     environment: process.env.NODE_ENV || 'development',
     database: 'checking'
@@ -345,7 +274,6 @@ app.get('/health', async (req, res) => {
       health.database_status = 'not_configured';
     }
     
-    // Railway требует 200 OK
     res.status(200).json(health);
     
   } catch (err) {
@@ -357,15 +285,13 @@ app.get('/health', async (req, res) => {
 });
 
 // ========== API ENDPOINTS ==========
-
-// Главная страница API
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
     service: 'SCool API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
-    port: PORT,
+    port: detectedPort,
     railway_port: process.env.PORT,
     documentation: {
       health: '/health',
@@ -383,13 +309,12 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Health
 app.get('/api/health', async (req, res) => {
   const apiHealth = {
     status: 'operational',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
-    port: PORT,
+    port: detectedPort,
     endpoints: {
       subjects: 'active',
       leaderboard: 'active',
@@ -414,7 +339,6 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Проверка базы данных
 app.get('/api/db-check', async (req, res) => {
   if (!pool) {
     return res.json({
@@ -426,8 +350,8 @@ app.get('/api/db-check', async (req, res) => {
   }
   
   try {
-    const version = await pool.query('SELECT version()');
-    const stats = await pool.query(`
+    const [versionRows] = await pool.query('SELECT VERSION() as version');
+    const [statsRows] = await pool.query(`
       SELECT 
         (SELECT COUNT(*) FROM leaderboard) as leaderboard_count,
         (SELECT COUNT(*) FROM subjects) as subjects_count,
@@ -436,9 +360,9 @@ app.get('/api/db-check', async (req, res) => {
     
     res.json({
       status: 'connected',
-      database: 'PostgreSQL',
-      version: version.rows[0].version.split(',')[0],
-      stats: stats.rows[0],
+      database: 'MySQL',
+      version: versionRows[0].version,
+      stats: statsRows[0],
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -450,7 +374,6 @@ app.get('/api/db-check', async (req, res) => {
   }
 });
 
-// Получить предметы для класса
 app.get('/api/subjects/:class', async (req, res) => {
   const classNum = parseInt(req.params.class);
   
@@ -465,12 +388,12 @@ app.get('/api/subjects/:class', async (req, res) => {
   }
   
   try {
-    const result = await pool.query(
-      'SELECT * FROM subjects WHERE class = $1 ORDER BY name',
+    const [rows] = await pool.query(
+      'SELECT * FROM subjects WHERE class = ? ORDER BY name',
       [classNum]
     );
     
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       const defaultSubjects = [
         { id: 1, name: 'Physics', class: classNum, progress: 0 },
         { id: 2, name: 'Mathematics', class: classNum, progress: 0 },
@@ -479,7 +402,7 @@ app.get('/api/subjects/:class', async (req, res) => {
       ];
       res.json(defaultSubjects);
     } else {
-      res.json(result.rows);
+      res.json(rows);
     }
   } catch (err) {
     console.error('Subjects error:', err);
@@ -490,7 +413,6 @@ app.get('/api/subjects/:class', async (req, res) => {
   }
 });
 
-// Лидерборд
 app.get('/api/leaderboard', async (req, res) => {
   if (!pool) {
     return res.json([
@@ -503,11 +425,11 @@ app.get('/api/leaderboard', async (req, res) => {
   }
   
   try {
-    const result = await pool.query(
-      'SELECT * FROM leaderboard ORDER BY rank NULLS LAST LIMIT 20'
+    const [rows] = await pool.query(
+      'SELECT * FROM leaderboard ORDER BY rank IS NULL, rank ASC LIMIT 20'
     );
     
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       const mockData = [
         { id: 1, username: 'elena_v', name: 'Elena V.', score: 1200, rank: 1 },
         { id: 2, username: 'vasya', name: 'Vasya P.', score: 1000, rank: 2 },
@@ -515,7 +437,7 @@ app.get('/api/leaderboard', async (req, res) => {
       ];
       res.json(mockData);
     } else {
-      res.json(result.rows);
+      res.json(rows);
     }
   } catch (err) {
     console.error('Leaderboard error:', err);
@@ -527,7 +449,6 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
-// Добавить/обновить результат
 app.post('/api/score', async (req, res) => {
   if (!pool) {
     return res.status(200).json({ 
@@ -546,49 +467,48 @@ app.post('/api/score', async (req, res) => {
       });
     }
     
-    const client = await pool.connect();
+    const connection = await pool.getConnection();
     
     try {
-      await client.query('BEGIN');
+      await connection.beginTransaction();
       
-      await client.query(`
+      await connection.query(`
         INSERT INTO leaderboard (username, name, score, rank) 
-        VALUES ($1, $2, $3, 999)
-        ON CONFLICT (username) 
-        DO UPDATE SET score = $3, updated_at = CURRENT_TIMESTAMP
+        VALUES (?, ?, ?, 999)
+        ON DUPLICATE KEY UPDATE 
+          score = VALUES(score), 
+          updated_at = CURRENT_TIMESTAMP
       `, [username, name, score]);
       
-      await client.query(`
-        WITH ranked AS (
+      await connection.query(`
+        UPDATE leaderboard l
+        JOIN (
           SELECT username, 
                  ROW_NUMBER() OVER (ORDER BY score DESC) as new_rank
           FROM leaderboard
-        )
-        UPDATE leaderboard l
-        SET rank = r.new_rank,
-            updated_at = CURRENT_TIMESTAMP
-        FROM ranked r
-        WHERE l.username = r.username
+        ) r ON l.username = r.username
+        SET l.rank = r.new_rank,
+            l.updated_at = CURRENT_TIMESTAMP
       `);
       
-      await client.query('COMMIT');
+      await connection.commit();
       
-      const result = await client.query(
-        'SELECT * FROM leaderboard WHERE username = $1',
+      const [result] = await connection.query(
+        'SELECT * FROM leaderboard WHERE username = ?',
         [username]
       );
       
       res.json({
         success: true,
-        rank: result.rows[0]?.rank || 999,
+        rank: result[0]?.rank || 999,
         score: score
       });
       
     } catch (err) {
-      await client.query('ROLLBACK');
+      await connection.rollback();
       throw err;
     } finally {
-      client.release();
+      connection.release();
     }
     
   } catch (err) {
@@ -600,7 +520,6 @@ app.post('/api/score', async (req, res) => {
   }
 });
 
-// Обновить прогресс по предмету
 app.post('/api/subject-progress', async (req, res) => {
   if (!pool) {
     return res.status(200).json({ 
@@ -621,9 +540,10 @@ app.post('/api/subject-progress', async (req, res) => {
     
     await pool.query(`
       INSERT INTO subjects (name, class, progress) 
-      VALUES ($1, $2, $3)
-      ON CONFLICT (name, class) 
-      DO UPDATE SET progress = $3, updated_at = CURRENT_TIMESTAMP
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE 
+        progress = VALUES(progress), 
+        updated_at = CURRENT_TIMESTAMP
     `, [name, classNum, progress]);
     
     res.json({ 
@@ -639,7 +559,6 @@ app.post('/api/subject-progress', async (req, res) => {
   }
 });
 
-// Получить топ 10
 app.get('/api/top10', async (req, res) => {
   if (!pool) {
     return res.json([
@@ -650,10 +569,10 @@ app.get('/api/top10', async (req, res) => {
   }
   
   try {
-    const result = await pool.query(
+    const [rows] = await pool.query(
       'SELECT * FROM leaderboard ORDER BY score DESC LIMIT 10'
     );
-    res.json(result.rows);
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ 
       error: err.message 
@@ -661,7 +580,6 @@ app.get('/api/top10', async (req, res) => {
   }
 });
 
-// ========== FRONTEND ROUTES ==========
 if (frontendExists) {
   app.get('/app', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
@@ -677,13 +595,12 @@ if (frontendExists) {
   });
 }
 
-// ========== ERROR HANDLING ==========
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
     error: 'API endpoint not found',
     path: req.path,
     method: req.method,
-    port: PORT
+    port: detectedPort
   });
 });
 
@@ -693,7 +610,7 @@ app.use((req, res) => {
   } else {
     res.status(404).json({ 
       error: 'Not found',
-      port: PORT,
+      port: detectedPort,
       available_endpoints: [
         '/',
         '/health',
@@ -709,17 +626,16 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
     error: 'Internal server error',
-    port: PORT,
+    port: detectedPort,
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// ========== ЗАПУСК СЕРВЕРА ==========
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(detectedPort, '0.0.0.0', () => {
   console.log('\n' + '='.repeat(60));
-  console.log(` SERVER RUNNING ON PORT: ${PORT}`);
-  console.log(` Internal URL: http://0.0.0.0:${PORT}`);
-  console.log(` Local URL:    http://localhost:${PORT}`);
+  console.log(` SERVER RUNNING ON PORT: ${detectedPort}`);
+  console.log(` Internal URL: http://0.0.0.0:${detectedPort}`);
+  console.log(` Local URL:    http://localhost:${detectedPort}`);
   console.log('='.repeat(60));
   console.log('\n📡 PUBLIC ENDPOINTS:');
   console.log(`    Main API:     https://YOUR_PROJECT.railway.app/`);
@@ -728,8 +644,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`    Leaderboard:  https://YOUR_PROJECT.railway.app/api/leaderboard`);
   console.log(`    Frontend:     https://YOUR_PROJECT.railway.app/app`);
   console.log('\n🔧 INTERNAL ENDPOINTS:');
-  console.log(`    DB Check:     http://localhost:${PORT}/api/db-check`);
-  console.log(`    Top 10:       http://localhost:${PORT}/api/top10`);
+  console.log(`    DB Check:     http://localhost:${detectedPort}/api/db-check`);
+  console.log(`    Top 10:       http://localhost:${detectedPort}/api/top10`);
   
   if (process.env.DATABASE_URL) {
     console.log(`\n DATABASE:       ${pool ? ' CONNECTED' : ' DISCONNECTED'}`);
@@ -742,9 +658,9 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   
   if (frontendExists) {
     console.log(`\n FRONTEND:        DETECTED`);
-    console.log(`    App:         http://localhost:${PORT}/app`);
-    console.log(`    CSS:         http://localhost:${PORT}/style.css`);
-    console.log(`     JS:          http://localhost:${PORT}/script.js`);
+    console.log(`    App:         http://localhost:${detectedPort}/app`);
+    console.log(`    CSS:         http://localhost:${detectedPort}/style.css`);
+    console.log(`     JS:          http://localhost:${detectedPort}/script.js`);
   } else {
     console.log(`\n FRONTEND:        NOT FOUND`);
   }
@@ -756,9 +672,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(60));
 });
 
-// ========== GRACEFUL SHUTDOWN ==========
 process.on('SIGTERM', () => {
-  console.log('\n🔻 Received SIGTERM - shutting down gracefully...');
+  console.log('\n Received SIGTERM - shutting down gracefully...');
   server.close(() => {
     console.log('   HTTP server closed');
     if (pool) {
@@ -786,4 +701,3 @@ process.on('SIGINT', () => {
     }
   });
 });
-
