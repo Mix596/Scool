@@ -5,13 +5,10 @@
     "buildCommand": "npm install"
   },
   "deploy": {
-    "startCommand": "node railway-start.js",
+    "startCommand": "npm start",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 90,
-    "restartPolicyType": "ON_FAILURE"
-  },
-  "variables": {
-    "NODE_ENV": "production",
-    "PORT": "8080"
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ON_FAILURE",
+    "numReplicas": 1
   }
 }
