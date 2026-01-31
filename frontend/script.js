@@ -1,6 +1,25 @@
-// ==================== КОНФИГУРАЦИЯ И ДАННЫЕ ====================
+// ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
+// Автоматически определяем URL для продакшена и разработки
+const getApiBaseUrl = () => {
+  // Если мы на Railway (продакшен)
+  if (window.location.hostname.includes('railway')) {
+    return window.location.origin;
+  }
+  
+  // Если локальная разработка
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3000';
+  }
+  
+  // По умолчанию текущий origin
+  return window.location.origin;
+};
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('🌐 API Base URL:', API_BASE_URL);
+
 const CONFIG = {
-    API_BASE_URL: window.location.origin,
+    API_BASE_URL: API_BASE_URL,
     FALLBACK_DATA: {
         SEARCH: [
             {
@@ -56,22 +75,177 @@ const CONFIG = {
 let currentUser = null;
 let isAuthenticated = false;
 
+// ==================== API ФУНКЦИИ ДЛЯ RAILWAY ====================
+
+// Сохраняем токен
+function saveAuthToken(token) {
+    localStorage.setItem('scool_token', token);
+}
+
+function getAuthToken() {
+    return localStorage.getItem('scool_token');
+}
+
+function removeAuthToken() {
+    localStorage.removeItem('scool_token');
+}
+
+// Универсальный запрос к API
+async function apiRequest(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch {
+                errorData = { error: errorText || `HTTP ${response.status}` };
+            }
+            throw new Error(errorData.error || `Ошибка ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`❌ API Error (${endpoint}):`, error.message);
+        
+        // Если ошибка сети
+        if (error.message.includes('Failed to fetch')) {
+            showCenterMessage('Ошибка подключения к серверу', 'fa-wifi');
+        }
+        
+        throw error;
+    }
+}
+
+// Проверка доступности сервера
+async function checkServerHealth() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (!response.ok) {
+            return false;
+        }
+        const data = await response.json();
+        return data.status === 'healthy' || data.status === 'OK';
+    } catch (error) {
+        console.warn('Health check failed:', error);
+        return false;
+    }
+}
+
+// Загрузка данных с сервера
+async function loadServerData() {
+    try {
+        const isHealthy = await checkServerHealth();
+        if (!isHealthy) {
+            console.log('Server not available, using fallback data');
+            useFallbackData();
+            return;
+        }
+        
+        // Загружаем лидерборд
+        try {
+            const leaderboard = await apiRequest('/api/leaderboard');
+            if (leaderboard && Array.isArray(leaderboard)) {
+                updateAllLeaderboards(leaderboard.map(item => ({
+                    full_name: item.name || item.full_name || 'Ученик',
+                    score: item.score || 0,
+                    class_number: item.class || item.class_number || 7
+                })));
+                console.log('✅ Leaderboard loaded from server');
+            }
+        } catch (error) {
+            console.log('Using fallback leaderboard');
+            updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+        }
+        
+        // Загружаем предметы если пользователь авторизован
+        if (currentUser && currentUser.class_number) {
+            try {
+                const subjects = await apiRequest(`/api/subjects/${currentUser.class_number}`);
+                if (subjects && Array.isArray(subjects)) {
+                    updateSubjectsFromServer(subjects);
+                    console.log('✅ Subjects loaded from server');
+                }
+            } catch (error) {
+                console.log('Using fallback subjects');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading server data:', error);
+        useFallbackData();
+    }
+}
+
+// Обновление предметов с сервера
+function updateSubjectsFromServer(subjectsData) {
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            const subjectCards = layout.querySelectorAll('.subject-card');
+            subjectCards.forEach((card, index) => {
+                if (subjectsData[index]) {
+                    const titleElement = card.querySelector('h3');
+                    if (titleElement) {
+                        titleElement.textContent = subjectsData[index].name || 'Физика';
+                    }
+                    
+                    const progressFill = card.querySelector('.progress-fill');
+                    const progressText = card.querySelector('.progress-text');
+                    
+                    const progress = subjectsData[index].progress || subjectsData[index].progress_percent || 0;
+                    
+                    if (progressFill) {
+                        progressFill.style.width = `${progress}%`;
+                    }
+                    if (progressText) {
+                        progressText.textContent = `${progress}% завершено`;
+                    }
+                }
+            });
+        }
+    });
+}
+
 // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
 
 async function initApp() {
-    console.log('Инициализация приложения SCool...');
+    console.log('🚀 Инициализация SCool для Railway...');
     
     try {
         // Проверяем, есть ли сохраненная сессия
         checkUserSession();
         
-        useFallbackData();
         setupEventListeners();
         initializeAllLayouts();
         
-        console.log('Приложение успешно инициализировано');
+        // Загружаем данные с сервера
+        await loadServerData();
+        
+        console.log('✅ Приложение успешно инициализировано');
     } catch (error) {
-        console.error('Ошибка инициализации:', error);
+        console.error('❌ Ошибка инициализации:', error);
         useFallbackData();
     }
 }
@@ -83,9 +257,9 @@ function checkUserSession() {
             currentUser = JSON.parse(savedUser);
             isAuthenticated = true;
             updateUserInterface();
-            console.log('Пользователь авторизован:', currentUser);
+            console.log('👤 Пользователь авторизован:', currentUser);
         } catch (e) {
-            console.error('Ошибка парсинга данных пользователя:', e);
+            console.error('❌ Ошибка парсинга данных пользователя:', e);
             logoutUser();
         }
     }
@@ -100,18 +274,17 @@ function updateUserInterface() {
 }
 
 function initializeAllLayouts() {
-    console.log('Инициализация всех макетов...');
+    console.log('📊 Инициализация всех макетов...');
     
     const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
     
     layouts.forEach(layoutId => {
         const layout = document.getElementById(layoutId);
         if (layout) {
+            // Инициализируем с fallback данными
             initializePhysicsSubjects(layout, layoutId);
         }
     });
-    
-    updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
 }
 
 function initializePhysicsSubjects(layout, layoutId) {
@@ -167,10 +340,18 @@ function updateAllLeaderboards(leaderboardData) {
         topThree.forEach((item, index) => {
             const li = document.createElement('li');
             li.className = 'leader-item';
-            const displayName = item.full_name || item.username || `Ученик ${index + 1}`;
+            const displayName = item.full_name || item.name || item.username || `Ученик ${index + 1}`;
+            
+            // Создаем аватар с первой буквой имени
+            const firstLetter = displayName.charAt(0).toUpperCase();
+            const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
+            const color = colors[index % colors.length];
             
             li.innerHTML = `
                 <span class="rank">${index + 1}</span>
+                <div class="avatar" style="background-color: ${color}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 30px; height: 30px; font-weight: bold;">
+                    ${firstLetter}
+                </div>
                 <span class="name">${displayName}</span>
                 <span class="score">${item.score || 0}</span>
             `;
@@ -181,8 +362,18 @@ function updateAllLeaderboards(leaderboardData) {
 }
 
 function useFallbackData() {
-    console.log('Используем резервные данные...');
-    initializeAllLayouts();
+    console.log('📦 Используем резервные данные...');
+    updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+    
+    // Обновляем предметы из fallback данных
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            initializePhysicsSubjects(layout, layoutId);
+        }
+    });
 }
 
 // ==================== СИСТЕМА АВТОРИЗАЦИИ ====================
@@ -229,8 +420,8 @@ function switchAuthTab(tabName) {
 }
 
 function clearAuthForms() {
-    document.getElementById('login-form').reset();
-    document.getElementById('register-form').reset();
+    document.getElementById('login-form')?.reset();
+    document.getElementById('register-form')?.reset();
     clearAuthMessages();
 }
 
@@ -279,31 +470,69 @@ async function handleLogin(event) {
         return;
     }
     
-    // Симуляция запроса на сервер
     try {
-        // Здесь будет реальный запрос к API
-        await simulateLoginRequest(email, password);
+        showAuthMessage('Выполняется вход...', 'info');
         
-        // Создаем фейкового пользователя
-        const user = {
-            id: Date.now(),
-            email: email,
-            name: email.split('@')[0],
-            class_number: 7,
-            remember_me: rememberMe
-        };
-        
-        // Сохраняем пользователя
-        saveUserSession(user, rememberMe);
-        
-        showAuthMessage('Вход выполнен успешно!', 'success');
-        
-        // Закрываем модалку через 1.5 секунды
-        setTimeout(() => {
-            closeAuthModal();
-            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
-            updateUserInterface();
-        }, 1500);
+        // Попытка входа через API
+        try {
+            const response = await apiRequest('/api/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            // Сохраняем пользователя из ответа сервера
+            const user = {
+                id: response.user?.id || Date.now(),
+                email: email,
+                name: response.user?.name || email.split('@')[0],
+                class_number: response.user?.class_number || 7,
+                remember_me: rememberMe,
+                token: response.token
+            };
+            
+            // Сохраняем токен
+            if (response.token) {
+                saveAuthToken(response.token);
+            }
+            
+            // Сохраняем пользователя
+            saveUserSession(user, rememberMe);
+            
+            showAuthMessage('Вход выполнен успешно!', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
+                updateUserInterface();
+                
+                // Загружаем данные с сервера после входа
+                loadServerData();
+            }, 1500);
+            
+        } catch (apiError) {
+            // Если API недоступен, используем демо-режим
+            console.log('API недоступен, используем демо-режим:', apiError);
+            
+            // Демо-пользователь
+            const user = {
+                id: Date.now(),
+                email: email,
+                name: email.split('@')[0],
+                class_number: 7,
+                remember_me: rememberMe
+            };
+            
+            // Сохраняем пользователя
+            saveUserSession(user, rememberMe);
+            
+            showAuthMessage('Демо-вход выполнен! (API недоступен)', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать в демо-режиме, ${user.name}!`, 'fa-user-check');
+                updateUserInterface();
+            }, 1500);
+        }
         
     } catch (error) {
         showAuthMessage(error.message || 'Ошибка входа', 'error');
@@ -346,65 +575,72 @@ async function handleRegister(event) {
         return;
     }
     
-    // Симуляция запроса на сервер
     try {
-        // Здесь будет реальный запрос к API
-        await simulateRegisterRequest(name, email, password, classNumber);
+        showAuthMessage('Регистрация...', 'info');
         
-        // Создаем фейкового пользователя
-        const user = {
-            id: Date.now(),
-            email: email,
-            name: name,
-            class_number: parseInt(classNumber)
-        };
-        
-        // Сохраняем пользователя
-        saveUserSession(user, true);
-        
-        showAuthMessage('Регистрация прошла успешно!', 'success');
-        
-        // Закрываем модалку через 1.5 секунды
-        setTimeout(() => {
-            closeAuthModal();
-            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
-            updateUserInterface();
-        }, 1500);
+        // Попытка регистрации через API
+        try {
+            const response = await apiRequest('/api/register', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email,
+                    password,
+                    fullName: name,
+                    classNumber: parseInt(classNumber)
+                })
+            });
+            
+            const user = {
+                id: response.user?.id || Date.now(),
+                email: email,
+                name: name,
+                class_number: parseInt(classNumber),
+                token: response.token
+            };
+            
+            // Сохраняем токен
+            if (response.token) {
+                saveAuthToken(response.token);
+            }
+            
+            saveUserSession(user, true);
+            
+            showAuthMessage('Регистрация прошла успешно!', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
+                updateUserInterface();
+                
+                // Загружаем данные с сервера
+                loadServerData();
+            }, 1500);
+            
+        } catch (apiError) {
+            // Если API недоступен, используем демо-режим
+            console.log('API недоступен, используем демо-регистрацию:', apiError);
+            
+            const user = {
+                id: Date.now(),
+                email: email,
+                name: name,
+                class_number: parseInt(classNumber)
+            };
+            
+            saveUserSession(user, true);
+            
+            showAuthMessage('Демо-регистрация успешна! (API недоступен)', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать в демо-режиме, ${user.name}!`, 'fa-user-plus');
+                updateUserInterface();
+            }, 1500);
+        }
         
     } catch (error) {
         showAuthMessage(error.message || 'Ошибка регистрации', 'error');
     }
-}
-
-function simulateLoginRequest(email, password) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // Имитация проверки на сервере
-            if (email === 'demo@scool.ru' && password === '123456') {
-                resolve({ success: true });
-            } else {
-                // Для демо - любой другой email/пароль тоже работает
-                if (password.length >= 6) {
-                    resolve({ success: true });
-                } else {
-                    reject(new Error('Неверный email или пароль'));
-                }
-            }
-        }, 1000);
-    });
-}
-
-function simulateRegisterRequest(name, email, password, classNumber) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // Имитация проверки на сервере
-            if (email.includes('@') && password.length >= 6) {
-                resolve({ success: true });
-            } else {
-                reject(new Error('Ошибка при регистрации'));
-            }
-        }, 1000);
-    });
 }
 
 function saveUserSession(user, rememberMe = true) {
@@ -423,9 +659,13 @@ function logoutUser() {
     isAuthenticated = false;
     localStorage.removeItem('scool_user');
     sessionStorage.removeItem('scool_user');
+    removeAuthToken();
     
     showCenterMessage('Вы вышли из системы', 'fa-sign-out-alt');
     updateUserInterface();
+    
+    // Возвращаем демо-данные
+    useFallbackData();
 }
 
 function validateEmail(email) {
@@ -465,7 +705,12 @@ function setupEventListeners() {
             const layoutId = getLayoutIdByClass(selectedClass);
             const layout = document.getElementById(layoutId);
             if (layout) {
-                initializePhysicsSubjects(layout, layoutId);
+                // Если есть соединение с сервером, загружаем данные
+                if (isAuthenticated) {
+                    loadSubjectsForClass(selectedClass);
+                } else {
+                    initializePhysicsSubjects(layout, layoutId);
+                }
             }
             
             console.log(`Переключились на ${selectedClass} класс`);
@@ -598,6 +843,42 @@ function setupEventListeners() {
             closeAuthModal();
         }
     });
+}
+
+// Функция для загрузки предметов для класса
+async function loadSubjectsForClass(classNumber) {
+    try {
+        const subjects = await apiRequest(`/api/subjects/${classNumber}`);
+        if (subjects && Array.isArray(subjects)) {
+            const layoutId = getLayoutIdByClass(classNumber);
+            const layout = document.getElementById(layoutId);
+            if (layout) {
+                const subjectCards = layout.querySelectorAll('.subject-card');
+                subjectCards.forEach((card, index) => {
+                    if (subjects[index]) {
+                        const titleElement = card.querySelector('h3');
+                        if (titleElement) {
+                            titleElement.textContent = subjects[index].name || 'Физика';
+                        }
+                        
+                        const progressFill = card.querySelector('.progress-fill');
+                        const progressText = card.querySelector('.progress-text');
+                        
+                        const progress = subjects[index].progress || 0;
+                        
+                        if (progressFill) {
+                            progressFill.style.width = `${progress}%`;
+                        }
+                        if (progressText) {
+                            progressText.textContent = `${progress}% завершено`;
+                        }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.log('Using fallback subjects for class', classNumber);
+    }
 }
 
 function showProfileMenu() {
@@ -1211,7 +1492,7 @@ function updateThemeLabels(isDark) {
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - SCool инициализация');
+    console.log('DOMContentLoaded - SCool инициализация для Railway');
     
     // Инициализация темы
     const themeToggle = document.getElementById('theme-toggle');
