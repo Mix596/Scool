@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCool - Образовательный портал</title>
+    <title>SCool - Личный кабинет</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -62,9 +62,11 @@
                 </div>
 
                 <div class="desktop-contact-us">
-                    <a href="mailto:support@scool.ru" class="desktop-contact-btn" title="Нажми на меня" target="_blank">
+                    <button class="desktop-contact-btn mail-button" type="button"
+                            data-email="Megamax77123@yandex.ru"
+                            title="Написать на Megamax77123@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -82,9 +84,11 @@
                 </div>
 
                 <div class="desktop-contact-us">
-                    <a href="mailto:support@scool.ru" class="desktop-contact-btn" title="Нажми на меня" target="_blank">
+                    <button class="desktop-contact-btn mail-button" type="button"
+                            data-email="Megamax77123@yandex.ru"
+                            title="Написать на Megamax77123@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -102,9 +106,11 @@
                 </div>
 
                 <div class="desktop-contact-us">
-                    <a href="mailto:support@scool.ru" class="desktop-contact-btn" title="Нажми на меня" target="_blank">
+                    <button class="desktop-contact-btn mail-button" type="button"
+                            data-email="Megamax77123@yandex.ru"
+                            title="Написать на Megamax77123@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -150,9 +156,11 @@
 
                 <!-- Кнопка "Написать нам" в стандартном макете -->
                 <div class="standard-contact-us" data-search="Написать нам поддержка помощь обратная связь">
-                    <a href="mailto:support@scool.ru" class="standard-contact-btn" title="Нажми на меня" target="_blank">
+                    <button class="standard-contact-btn mail-button" type="button"
+                            data-email="Megamax77123@yandex.ru"
+                            title="Написать на Megamax77123@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -180,7 +188,7 @@
                         <span class="score">900</span>
                     </li>
                 </ul>
-                <button class="btn btn-full" id="full-table-btn">Вся таблица</button>
+                <button class="btn btn-full" id="full-table-btn" type="button">Вся таблица</button>
             </div>
 
             <div class="card advertisement" data-search="Реклама объявление">
@@ -188,6 +196,96 @@
             </div>
         </aside>
     </main>
+
+    <!-- Центральная плашка для уведомлений -->
+    <div class="center-message" id="center-message">
+        <div class="center-message-content">
+            <i class="fas center-message-icon" id="center-message-icon"></i>
+            <div class="center-message-text" id="center-message-text"></div>
+            <button class="center-message-close" id="close-center-message" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно авторизации -->
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-close">&times;</span>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" data-tab="login">Вход</button>
+                <button class="auth-tab-btn" data-tab="register">Регистрация</button>
+            </div>
+            
+            <!-- Форма входа -->
+            <form id="login-form" class="auth-form active">
+                <div class="auth-input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" placeholder="Email" required id="login-email">
+                </div>
+                <div class="auth-input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" placeholder="Пароль" required id="login-password">
+                </div>
+                <div class="auth-options">
+                    <label class="auth-checkbox">
+                        <input type="checkbox" id="remember-me">
+                        <span>Запомнить меня</span>
+                    </label>
+                    <a href="#" class="auth-forgot">Забыли пароль?</a>
+                </div>
+                <button type="submit" class="auth-submit-btn">Войти</button>
+                
+                <div class="auth-divider">
+                    <span>или войти через</span>
+                </div>
+                
+                <div class="auth-social">
+                    <button type="button" class="auth-social-btn google">
+                        <i class="fab fa-google"></i> Google
+                    </button>
+                    <button type="button" class="auth-social-btn vk">
+                        <i class="fab fa-vk"></i> VK
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Форма регистрации -->
+            <form id="register-form" class="auth-form">
+                <div class="auth-input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" placeholder="Имя и фамилия" required id="register-name">
+                </div>
+                <div class="auth-input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" placeholder="Email" required id="register-email">
+                </div>
+                <div class="auth-input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" placeholder="Пароль" required id="register-password">
+                </div>
+                <div class="auth-input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" placeholder="Повторите пароль" required id="register-password-confirm">
+                </div>
+                <div class="auth-input-group">
+                    <i class="fas fa-graduation-cap"></i>
+                    <select id="register-class" required>
+                        <option value="">Выберите класс</option>
+                        <option value="7">7 класс</option>
+                        <option value="8">8 класс</option>
+                        <option value="9">9 класс</option>
+                    </select>
+                </div>
+                <label class="auth-checkbox">
+                    <input type="checkbox" required id="register-terms">
+                    <span>Я принимаю <a href="#" class="auth-link">Условия использования</a></span>
+                </label>
+                <button type="submit" class="auth-submit-btn">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
