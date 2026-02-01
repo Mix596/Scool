@@ -1,83 +1,1018 @@
-// ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
-// Автоматически определяем URL для продакшена и разработки
-const getApiBaseUrl = () => {
-  // Если мы на Railway (продакшен)
-  if (window.location.hostname.includes('railway')) {
-    return window.location.origin;
-  }
-  
-  // Если локальная разработка
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:3000';
-  }
-  
-  // По умолчанию текущий origin
-  return window.location.origin;
-};
+Вот **полные готовые коды** для всех файлов:
 
-const API_BASE_URL = getApiBaseUrl();
-console.log('🌐 API Base URL:', API_BASE_URL);
+## 📁 **1. server.js (полная версия)**
 
-const CONFIG = {
-    API_BASE_URL: API_BASE_URL,
-    FALLBACK_DATA: {
-        SEARCH: [
-            {
-                title: "Физика - 7 класс",
-                description: "14% завершено",
-                type: "Предмет",
-                icon: "fas fa-atom",
-                keywords: "физика наука 7 класс механика движение"
-            },
-            {
-                title: "Таблица лидеров",
-                description: "Елена Васильева (1200), Василий Петров (1000), Евгений Сидоров (900)",
-                type: "Рейтинг",
-                icon: "fas fa-chart-line",
-                keywords: "лидеры турнир рейтинг таблица баллы"
-            },
-            {
-                title: "Написать нам",
-                description: "Свяжитесь с поддержкой SCool",
-                type: "Поддержка",
-                icon: "fas fa-envelope",
-                keywords: "написать нам поддержка помощь обратная связь"
-            }
-        ],
-        SUBJECTS_BY_CLASS: {
-            7: [
-                { name: 'Физика', progress_percent: 14, color: '#3f51b5' },
-                { name: 'Математика', progress_percent: 45, color: '#f44336' },
-                { name: 'Химия', progress_percent: 28, color: '#4caf50' },
-                { name: 'Биология', progress_percent: 32, color: '#ff9800' }
-            ],
-            8: [
-                { name: 'Физика', progress_percent: 22, color: '#3f51b5' },
-                { name: 'Алгебра', progress_percent: 51, color: '#f44336' },
-                { name: 'Геометрия', progress_percent: 38, color: '#4caf50' },
-                { name: 'Информатика', progress_percent: 67, color: '#ff9800' }
-            ],
-            9: [
-                { name: 'Физика', progress_percent: 58, color: '#3f51b5' },
-                { name: 'Математика', progress_percent: 72, color: '#f44336' },
-                { name: 'Химия', progress_percent: 41, color: '#4caf50' },
-                { name: 'Биология', progress_percent: 36, color: '#ff9800' }
-            ]
-        },
-        LEADERBOARD: [
-            { full_name: 'Елена Васильева', score: 1200, class_number: 9 },
-            { full_name: 'Василий Петров', score: 1000, class_number: 8 },
-            { full_name: 'Евгений Сидоров', score: 900, class_number: 7 }
-        ]
+```javascript
+// ========== RAILWAY EMERGENCY PORT FIX ==========
+console.log('='.repeat(60));
+console.log('🚀 SCool SERVER - Railway Production');
+console.log('='.repeat(60));
+
+console.log('ALL ENVIRONMENT VARIABLES:');
+for (const key in process.env) {
+  if (key.includes('PORT') || key.includes('RAILWAY') || key.includes('MYSQL')) {
+    console.log(`  ${key}=${key.includes('PASSWORD') || key.includes('URL') ? '******' : process.env[key]}`);
+  }
+}
+
+let detectedPort = null;
+
+if (process.env.PORT) {
+  detectedPort = parseInt(process.env.PORT);
+  console.log(` Found port in process.env.PORT: ${detectedPort}`);
+} else {
+  detectedPort = 8080;
+  console.log(` No port detected, using Railway default: ${detectedPort}`);
+}
+
+console.log('='.repeat(60));
+console.log(' SCool Server - Railway Production');
+console.log('='.repeat(60));
+console.log(` Railway PORT variable: "${process.env.PORT}"`);
+console.log(` Using PORT: ${detectedPort}`);
+console.log(` NODE_ENV: ${process.env.NODE_ENV || 'production'}`);
+console.log(` Listen address: 0.0.0.0`);
+console.log('='.repeat(60));
+
+// ========== RAILWAY MYSQL CONFIGURATION ==========
+console.log('\n🔌 CONNECTING TO RAILWAY MYSQL...');
+console.log('='.repeat(30));
+
+const mysqlVars = {};
+let mysqlUrl = null;
+
+for (const key in process.env) {
+  if (key.includes('MYSQL')) {
+    if (key === 'MYSQL_URL') {
+      mysqlUrl = process.env[key];
+      mysqlVars[key] = 'mysql://****:****@****/railway';
+    } else if (key.includes('PASSWORD')) {
+      mysqlVars[key] = '******';
+    } else {
+      mysqlVars[key] = process.env[key];
     }
-};
+  }
+}
+
+console.log('MySQL Variables:', mysqlVars);
+console.log(` MYSQL_URL found: ${!!mysqlUrl}`);
+console.log('='.repeat(60));
+
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
+
+// Проверяем наличие mysql2 модуля
+try {
+  require('mysql2/promise');
+  console.log(`✅ mysql2 module loaded`);
+} catch (err) {
+  console.error('❌ ERROR loading mysql2 module:', err.message);
+  process.exit(1);
+}
+
+const mysql = require('mysql2/promise');
+
+const app = express();
+
+// ========== MIDDLEWARE ==========
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ========== БАЗА ДАННЫХ ==========
+console.log('\n💾 DATABASE CONFIGURATION:');
+let pool = null;
+
+async function initializeDatabase() {
+  if (!mysqlUrl) {
+    console.log('❌ MYSQL_URL not found');
+    console.log('⚠️  В Railway добавьте переменную: MYSQL_URL = ${{ MySQL.MYSQL_URL }}');
+    throw new Error('MYSQL_URL is required for production');
+  }
+
+  try {
+    console.log('🔌 Connecting to existing Railway MySQL database...');
+    
+    const maskedUrl = mysqlUrl.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
+    console.log(`   Database URL: ${maskedUrl}`);
+    
+    const poolConfig = {
+      uri: mysqlUrl,
+      ssl: { rejectUnauthorized: false },
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 10000,
+      timezone: 'Z',
+      charset: 'utf8mb4'
+    };
+
+    pool = mysql.createPool(poolConfig);
+    
+    // Тестируем подключение
+    const connection = await pool.getConnection();
+    console.log('✅ DATABASE CONNECTED');
+    
+    // Получаем информацию о подключении
+    const [versionRows] = await connection.query('SELECT VERSION() as version');
+    const [dbRows] = await connection.query('SELECT DATABASE() as db, USER() as user');
+    
+    console.log(`   Database: ${dbRows[0].db || 'Not selected'}`);
+    console.log(`   User: ${dbRows[0].user}`);
+    console.log(`   MySQL Version: ${versionRows[0].version}`);
+    
+    // Проверяем существующие таблицы
+    await checkAndCreateTables(connection);
+    
+    connection.release();
+    
+    return pool;
+    
+  } catch (err) {
+    console.error('❌ DATABASE CONNECTION FAILED:', err.message);
+    console.error('   Error code:', err.code);
+    throw new Error(`Cannot connect to Railway MySQL: ${err.message}`);
+  }
+}
+
+// Проверка и создание таблиц если их нет
+async function checkAndCreateTables(connection) {
+  try {
+    console.log('\n🔍 CHECKING DATABASE TABLES...');
+    
+    // Создаем базу данных если не существует
+    await connection.query('CREATE DATABASE IF NOT EXISTS railway');
+    await connection.query('USE railway');
+    
+    // Таблица users
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        class INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT class_check CHECK (class >= 1 AND class <= 11)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('✅ users table ready');
+    
+    // Таблица leaderboard
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS leaderboard (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        score INT DEFAULT 0,
+        \`rank\` INT DEFAULT 999,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('✅ leaderboard table ready');
+    
+    // Таблица subjects
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS subjects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        class INT NOT NULL,
+        progress INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT progress_check CHECK (progress >= 0 AND progress <= 100),
+        UNIQUE KEY unique_subject_class (name, class)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('✅ subjects table ready');
+    
+    // Добавляем тестовые данные если таблицы пустые
+    await seedDatabase(connection);
+    
+  } catch (err) {
+    console.error('❌ DATABASE SETUP ERROR:', err.message);
+  }
+}
+
+// Добавление тестовых данных
+async function seedDatabase(connection) {
+  try {
+    console.log('\n🌱 SEEDING DATABASE WITH TEST DATA...');
+    
+    // Проверяем users
+    const [usersCount] = await connection.query('SELECT COUNT(*) as count FROM users');
+    if (parseInt(usersCount[0].count) === 0) {
+      await connection.query(`
+        INSERT INTO users (username, email, password, class) VALUES
+        ('elena_v', 'elena@example.com', 'password123', 10),
+        ('vasya_p', 'vasya@example.com', 'password123', 9),
+        ('evgeniy_s', 'evgeniy@example.com', 'password123', 11),
+        ('maria_k', 'maria@example.com', 'password123', 8),
+        ('alex_t', 'alex@example.com', 'password123', 10)
+      `);
+      console.log('✅ Test users added');
+    }
+    
+    // Проверяем leaderboard
+    const [leaderboardCount] = await connection.query('SELECT COUNT(*) as count FROM leaderboard');
+    if (parseInt(leaderboardCount[0].count) === 0) {
+      await connection.query(`
+        INSERT INTO leaderboard (username, name, score, \`rank\`) VALUES
+        ('elena_v', 'Елена Васильева', 1200, 1),
+        ('vasya_p', 'Василий Петров', 1000, 2),
+        ('evgeniy_s', 'Евгений Сидоров', 900, 3),
+        ('maria_k', 'Мария Кузнецова', 850, 4),
+        ('alex_t', 'Алексей Тихонов', 800, 5)
+      `);
+      console.log('✅ Test leaderboard added');
+    }
+    
+    // Проверяем subjects
+    const [subjectsCount] = await connection.query('SELECT COUNT(*) as count FROM subjects');
+    if (parseInt(subjectsCount[0].count) === 0) {
+      await connection.query(`
+        INSERT INTO subjects (name, class, progress) VALUES
+        ('Физика', 7, 14),
+        ('Математика', 7, 45),
+        ('Химия', 7, 28),
+        ('Биология', 7, 32),
+        ('Физика', 8, 22),
+        ('Алгебра', 8, 51),
+        ('Геометрия', 8, 38),
+        ('Информатика', 8, 67),
+        ('Физика', 9, 58),
+        ('Математика', 9, 72),
+        ('Химия', 9, 41),
+        ('Биология', 9, 36)
+      `);
+      console.log('✅ Test subjects added');
+    }
+    
+    console.log('✅ Database seeding complete');
+    
+  } catch (err) {
+    console.error('❌ SEEDING ERROR:', err.message);
+  }
+}
+
+// ========== ПУТИ К ФАЙЛАМ ==========
+const projectRoot = process.cwd();
+const frontendPath = path.join(projectRoot, 'frontend');
+const frontendExists = fs.existsSync(frontendPath);
+
+console.log('\n📁 FILE SYSTEM PATHS:');
+console.log(`   Project Root: ${projectRoot}`);
+console.log(`   Frontend Dir: ${frontendPath}`);
+console.log(`   Frontend Exists: ${frontendExists ? '✅ YES' : '❌ NO'}`);
+
+if (frontendExists) {
+  console.log('\n   FRONTEND FILES:');
+  const files = fs.readdirSync(frontendPath);
+  files.slice(0, 10).forEach(file => console.log(`      ${file}`));
+  if (files.length > 10) console.log(`      ... and ${files.length - 10} more`);
+}
+console.log('='.repeat(60));
+
+// ========== СТАТИЧЕСКИЕ ФАЙЛЫ ==========
+if (frontendExists) {
+  app.use(express.static(frontendPath, {
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      if (path.extname(filePath) === '.html') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
+  console.log('✅ Static files configured');
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ==========
+initializeDatabase().then(() => {
+  console.log('\n✅ DATABASE INITIALIZATION COMPLETE');
+  console.log('✅ SERVER READY TO USE RAILWAY MYSQL DATABASE');
+}).catch(err => {
+  console.error('\n❌ DATABASE INIT FAILED:', err.message);
+  console.error('❌ SERVER CANNOT START WITHOUT DATABASE CONNECTION');
+  process.exit(1);
+});
+
+// ========== API ENDPOINTS ==========
+
+// Главная страница API
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'SCool API - Production',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    port: detectedPort,
+    database: pool ? 'connected' : 'disconnected',
+    documentation: {
+      auth: {
+        login: 'POST /api/login',
+        register: 'POST /api/register',
+        user: 'GET /api/user'
+      },
+      data: {
+        subjects: 'GET /api/subjects/:class',
+        leaderboard: 'GET /api/leaderboard',
+        score: 'POST /api/score',
+        subject_progress: 'POST /api/subject-progress',
+        search: 'GET /api/search?q=...',
+        classes: 'GET /api/classes',
+        users_by_class: 'GET /api/users/class/:class',
+        top10: 'GET /api/top10'
+      },
+      system: {
+        health: '/health',
+        db_info: '/api/db-info'
+      }
+    },
+    info: 'Using Railway MySQL database'
+  });
+});
+
+// Проверка здоровья
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'checking',
+    timestamp: new Date().toISOString(),
+    service: 'scool-api',
+    port: detectedPort,
+    environment: process.env.NODE_ENV || 'production',
+    database: 'checking'
+  };
+
+  try {
+    if (pool) {
+      await pool.query('SELECT 1');
+      health.database = 'connected';
+      health.database_status = 'healthy';
+      health.status = 'healthy';
+      
+      const [dbRows] = await pool.query('SELECT DATABASE() as db');
+      health.database_name = dbRows[0].db;
+    } else {
+      health.database = 'disconnected';
+      health.database_status = 'no_pool';
+      health.status = 'unhealthy';
+    }
+    
+    res.status(200).json(health);
+    
+  } catch (err) {
+    health.database = 'error';
+    health.database_error = err.message;
+    health.status = 'unhealthy';
+    res.status(200).json(health);
+  }
+});
+
+// Информация о базе данных
+app.get('/api/db-info', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({
+      status: 'database_error',
+      message: 'Database connection not established',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  try {
+    const [versionRows] = await pool.query('SELECT VERSION() as version');
+    const [dbRows] = await pool.query('SELECT DATABASE() as db');
+    
+    const [tables] = await pool.query('SHOW TABLES');
+    
+    const tableCounts = {};
+    for (const table of tables) {
+      const tableName = Object.values(table)[0];
+      try {
+        const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM \`${tableName}\``);
+        tableCounts[tableName] = countRows[0].count;
+      } catch (err) {
+        tableCounts[tableName] = 'error';
+      }
+    }
+    
+    res.json({
+      status: 'connected',
+      database: 'Railway MySQL',
+      version: versionRows[0].version,
+      current_database: dbRows[0].db,
+      tables_count: tables.length,
+      tables: tables.map(t => ({
+        name: Object.values(t)[0],
+        records: tableCounts[Object.values(t)[0]]
+      })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'database_error',
+      message: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ========== АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ==========
+
+app.post('/api/login', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email и пароль обязательны' 
+      });
+    }
+    
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE email = ? AND password = ?', 
+      [email, password]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Неверный email или пароль' 
+      });
+    }
+    
+    const user = rows[0];
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.username,
+        class_number: user.class
+      },
+      token: 'demo-token-' + Date.now(),
+      message: 'Вход выполнен успешно'
+    });
+    
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+app.post('/api/register', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { email, password, fullName, classNumber } = req.body;
+    
+    if (!email || !password || !fullName || !classNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Все поля обязательны' 
+      });
+    }
+    
+    const [existing] = await pool.query(
+      'SELECT * FROM users WHERE email = ?', 
+      [email]
+    );
+    
+    if (existing.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Пользователь с таким email уже существует' 
+      });
+    }
+    
+    const username = email.split('@')[0];
+    
+    const [result] = await pool.query(
+      'INSERT INTO users (username, email, password, class) VALUES (?, ?, ?, ?)',
+      [username, email, password, classNumber]
+    );
+    
+    try {
+      await pool.query(
+        'INSERT INTO leaderboard (username, name, score) VALUES (?, ?, 0)',
+        [username, fullName]
+      );
+    } catch (err) {
+      console.log('User not added to leaderboard:', err.message);
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: result.insertId,
+        email: email,
+        name: fullName,
+        class_number: classNumber
+      },
+      token: 'demo-token-' + Date.now(),
+      message: 'Регистрация успешна'
+    });
+    
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/user', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Токен не предоставлен' 
+      });
+    }
+    
+    const [rows] = await pool.query('SELECT * FROM users LIMIT 1');
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Пользователь не найден' 
+      });
+    }
+    
+    const user = rows[0];
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.username,
+        class_number: user.class
+      }
+    });
+    
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+// ========== ОСНОВНЫЕ ЭНДПОИНТЫ ДАННЫХ ==========
+
+app.get('/api/subjects/:class', async (req, res) => {
+  const classNum = parseInt(req.params.class);
+  
+  if (!pool) {
+    return res.status(503).json({
+      status: 'database_error',
+      message: 'Database connection not available',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM subjects WHERE class = ? ORDER BY name',
+      [classNum]
+    );
+    
+    res.json(rows);
+    
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({
+      status: 'database_error',
+      message: 'Database connection not available',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM leaderboard ORDER BY score DESC LIMIT 20'
+    );
+    
+    res.json(rows);
+    
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.post('/api/score', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { username, name, score } = req.body;
+    
+    if (!username || !name || score === undefined) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields' 
+      });
+    }
+    
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      await connection.query(`
+        INSERT INTO leaderboard (username, name, score) 
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          score = VALUES(score), 
+          name = VALUES(name),
+          updated_at = CURRENT_TIMESTAMP
+      `, [username, name, score]);
+      
+      await connection.query(`
+        SET @rank_num = 0;
+        UPDATE leaderboard 
+        SET \`rank\` = (@rank_num := @rank_num + 1)
+        ORDER BY score DESC;
+      `);
+      
+      await connection.commit();
+      
+      const [result] = await connection.query(
+        'SELECT * FROM leaderboard WHERE username = ?',
+        [username]
+      );
+      
+      res.json({
+        success: true,
+        rank: result[0]?.rank || 999,
+        score: score,
+        username: username,
+        name: name,
+        message: 'Score updated successfully'
+      });
+      
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+    
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+app.post('/api/subject-progress', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { name, class: classNum, progress } = req.body;
+    
+    if (!name || !classNum || progress === undefined) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields' 
+      });
+    }
+    
+    await pool.query(`
+      INSERT INTO subjects (name, class, progress) 
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE 
+        progress = VALUES(progress), 
+        updated_at = CURRENT_TIMESTAMP
+    `, [name, classNum, progress]);
+    
+    res.json({ 
+      success: true, 
+      message: 'Progress updated successfully',
+      data: { name, class: classNum, progress }
+    });
+    
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/top10', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM leaderboard ORDER BY score DESC LIMIT 10'
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/search', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+    
+    const [leaderboardResults] = await pool.query(
+      'SELECT * FROM leaderboard WHERE name LIKE ? OR username LIKE ? LIMIT 5',
+      [`%${q}%`, `%${q}%`]
+    );
+    
+    const [subjectsResults] = await pool.query(
+      'SELECT * FROM subjects WHERE name LIKE ? LIMIT 5',
+      [`%${q}%`]
+    );
+    
+    const results = [
+      ...leaderboardResults.map(item => ({
+        title: `${item.name} (${item.score} баллов)`,
+        description: `Лидерборд - ${item.rank || 'Не оценен'}`,
+        type: 'Ученик',
+        icon: 'fas fa-user-graduate',
+        data: item
+      })),
+      ...subjectsResults.map(item => ({
+        title: `${item.name} - ${item.class} класс`,
+        description: `${item.progress || 0}% завершено`,
+        type: 'Предмет',
+        icon: 'fas fa-book',
+        data: item
+      }))
+    ];
+    
+    res.json(results);
+    
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/classes', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const [rows] = await pool.query(
+      'SELECT DISTINCT class FROM subjects ORDER BY class'
+    );
+    
+    res.json(rows.map(row => row.class));
+    
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/users/class/:class', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const classNum = parseInt(req.params.class);
+    
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE class = ?',
+      [classNum]
+    );
+    
+    res.json(rows);
+    
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
+    });
+  }
+});
+
+// ========== ФРОНТЕНД РОУТЫ ==========
+if (frontendExists) {
+  app.get('/app', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+  
+  app.get('/app/*', (req, res) => {
+    const filePath = path.join(frontendPath, req.path.replace('/app', ''));
+    if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isDirectory()) {
+      res.sendFile(filePath);
+    } else {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    }
+  });
+}
+
+// ========== ОБРАБОТКА ОШИБОК ==========
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ 
+    error: 'API endpoint not found',
+    path: req.path,
+    method: req.method,
+    port: detectedPort
+  });
+});
+
+app.use((req, res) => {
+  if (frontendExists && !req.path.startsWith('/api/')) {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  } else {
+    res.status(404).json({ 
+      error: 'Not found',
+      port: detectedPort,
+      available_endpoints: [
+        '/',
+        '/health',
+        '/api/db-info',
+        '/api/subjects/:class',
+        '/api/leaderboard',
+        '/api/top10'
+      ]
+    });
+  }
+});
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    port: detectedPort,
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// ========== ЗАПУСК СЕРВЕРА ==========
+const server = app.listen(detectedPort, '0.0.0.0', () => {
+  console.log('\n' + '='.repeat(60));
+  console.log(`✅ SERVER RUNNING ON PORT: ${detectedPort}`);
+  console.log(` Internal URL: http://0.0.0.0:${detectedPort}`);
+  console.log(` Local URL:    http://localhost:${detectedPort}`);
+  console.log('='.repeat(60));
+  console.log('\n📡 PUBLIC ENDPOINTS:');
+  console.log(`    Main API:     https://scool-production.up.railway.app/`);
+  console.log(`    Health:       https://scool-production.up.railway.app/health`);
+  console.log(`    DB Info:      https://scool-production.up.railway.app/api/db-info`);
+  console.log(`    Subjects:     https://scool-production.up.railway.app/api/subjects/7`);
+  console.log(`    Leaderboard:  https://scool-production.up.railway.app/api/leaderboard`);
+  console.log(`    Frontend:     https://scool-production.up.railway.app/app`);
+  console.log(`    Login:        POST https://scool-production.up.railway.app/api/login`);
+  console.log(`    Register:     POST https://scool-production.up.railway.app/api/register`);
+  
+  if (pool) {
+    console.log(`\n💾 DATABASE:       ✅ CONNECTED TO RAILWAY MYSQL`);
+    console.log(`   Service: mysql-volume-_51g`);
+    console.log(`   Status: Online`);
+  } else {
+    console.log(`\n💾 DATABASE:       ❌ DISCONNECTED`);
+  }
+  
+  if (frontendExists) {
+    console.log(`\n🌐 FRONTEND:        ✅ DETECTED`);
+    console.log(`   App:         https://scool-production.up.railway.app/app`);
+  } else {
+    console.log(`\n🌐 FRONTEND:        ❌ NOT FOUND`);
+  }
+  
+  console.log('\n' + '='.repeat(60));
+  console.log('🚀 USING RAILWAY MYSQL DATABASE');
+  console.log(` Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(` Port: ${detectedPort}`);
+  console.log(` Database: ${pool ? '✅ Railway MySQL' : '❌ No database'}`);
+  console.log('='.repeat(60));
+});
+
+// ========== GRACEFUL SHUTDOWN ==========
+process.on('SIGTERM', () => {
+  console.log('\n🔻 Received SIGTERM - shutting down gracefully...');
+  server.close(() => {
+    console.log('   HTTP server closed');
+    if (pool) {
+      pool.end(() => {
+        console.log('   Database pool closed');
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('\n🔻 Received SIGINT - shutting down...');
+  server.close(() => {
+    console.log('   HTTP server closed');
+    if (pool) {
+      pool.end(() => {
+        console.log('   Database pool closed');
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
+  });
+});
+```
+
+## 📁 **2. script.js (полная версия)**
+
+```javascript
+// ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
+const API_BASE_URL = window.location.origin;
+console.log('🌐 API Base URL:', API_BASE_URL);
 
 let currentUser = null;
 let isAuthenticated = false;
 
-// ==================== API ФУНКЦИИ ДЛЯ RAILWAY ====================
+// ==================== API ФУНКЦИИ ====================
 
-// Сохраняем токен
 function saveAuthToken(token) {
     localStorage.setItem('scool_token', token);
 }
@@ -90,7 +1025,6 @@ function removeAuthToken() {
     localStorage.removeItem('scool_token');
 }
 
-// Универсальный запрос к API
 async function apiRequest(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     
@@ -111,92 +1045,71 @@ async function apiRequest(endpoint, options = {}) {
         });
         
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API Error:', errorText);
-            
-            let errorData;
-            try {
-                errorData = JSON.parse(errorText);
-            } catch {
-                errorData = { error: errorText || `HTTP ${response.status}` };
-            }
-            throw new Error(errorData.error || `Ошибка ${response.status}`);
+            throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
         }
         
         return await response.json();
     } catch (error) {
         console.error(`❌ API Error (${endpoint}):`, error.message);
-        
-        // Если ошибка сети
-        if (error.message.includes('Failed to fetch')) {
-            showCenterMessage('Ошибка подключения к серверу', 'fa-wifi');
-        }
-        
+        showCenterMessage(`Ошибка: ${error.message}`, 'fa-exclamation-triangle');
         throw error;
     }
 }
 
-// Проверка доступности сервера
 async function checkServerHealth() {
     try {
         const response = await fetch(`${API_BASE_URL}/health`);
-        if (!response.ok) {
-            return false;
-        }
         const data = await response.json();
-        return data.status === 'healthy' || data.status === 'OK';
+        return data.status === 'healthy' || data.status === 'connected';
     } catch (error) {
         console.warn('Health check failed:', error);
         return false;
     }
 }
 
-// Загрузка данных с сервера
 async function loadServerData() {
     try {
         const isHealthy = await checkServerHealth();
         if (!isHealthy) {
-            console.log('Server not available, using fallback data');
-            useFallbackData();
-            return;
+            throw new Error('Сервер недоступен');
         }
         
-        // Загружаем лидерборд
+        console.log('📥 Загружаем данные из MySQL...');
+        
         try {
             const leaderboard = await apiRequest('/api/leaderboard');
             if (leaderboard && Array.isArray(leaderboard)) {
-                updateAllLeaderboards(leaderboard.map(item => ({
-                    full_name: item.name || item.full_name || 'Ученик',
-                    score: item.score || 0,
-                    class_number: item.class || item.class_number || 7
-                })));
-                console.log('✅ Leaderboard loaded from server');
+                updateAllLeaderboards(leaderboard);
+                console.log('✅ Leaderboard загружен из БД');
+            } else {
+                throw new Error('Нет данных в leaderboard таблице');
             }
         } catch (error) {
-            console.log('Using fallback leaderboard');
-            updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+            console.error('Ошибка загрузки leaderboard:', error);
+            showCenterMessage('Таблица лидеров пуста. Добавьте данные в MySQL', 'fa-database');
         }
         
-        // Загружаем предметы если пользователь авторизован
         if (currentUser && currentUser.class_number) {
             try {
                 const subjects = await apiRequest(`/api/subjects/${currentUser.class_number}`);
                 if (subjects && Array.isArray(subjects)) {
                     updateSubjectsFromServer(subjects);
-                    console.log('✅ Subjects loaded from server');
+                    console.log('✅ Subjects загружены из БД');
+                } else {
+                    showCenterMessage(`Нет предметов для ${currentUser.class_number} класса`, 'fa-book');
                 }
             } catch (error) {
-                console.log('Using fallback subjects');
+                console.error('Ошибка загрузки subjects:', error);
+                showCenterMessage('Добавьте предметы в таблицу subjects в MySQL', 'fa-table');
             }
         }
         
     } catch (error) {
-        console.error('Error loading server data:', error);
-        useFallbackData();
+        console.error('❌ Ошибка загрузки данных:', error.message);
+        showCenterMessage('Не удалось загрузить данные. Проверьте подключение к БД', 'fa-database');
     }
 }
 
-// Обновление предметов с сервера
 function updateSubjectsFromServer(subjectsData) {
     const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
     
@@ -208,13 +1121,13 @@ function updateSubjectsFromServer(subjectsData) {
                 if (subjectsData[index]) {
                     const titleElement = card.querySelector('h3');
                     if (titleElement) {
-                        titleElement.textContent = subjectsData[index].name || 'Физика';
+                        titleElement.textContent = subjectsData[index].name || 'Предмет';
                     }
                     
                     const progressFill = card.querySelector('.progress-fill');
                     const progressText = card.querySelector('.progress-text');
                     
-                    const progress = subjectsData[index].progress || subjectsData[index].progress_percent || 0;
+                    const progress = subjectsData[index].progress || 0;
                     
                     if (progressFill) {
                         progressFill.style.width = `${progress}%`;
@@ -234,19 +1147,16 @@ async function initApp() {
     console.log('🚀 Инициализация SCool для Railway...');
     
     try {
-        // Проверяем, есть ли сохраненная сессия
         checkUserSession();
-        
         setupEventListeners();
         initializeAllLayouts();
         
-        // Загружаем данные с сервера
         await loadServerData();
         
         console.log('✅ Приложение успешно инициализировано');
     } catch (error) {
         console.error('❌ Ошибка инициализации:', error);
-        useFallbackData();
+        showCenterMessage('Ошибка инициализации приложения', 'fa-exclamation-circle');
     }
 }
 
@@ -269,7 +1179,6 @@ function updateUserInterface() {
     const profileBtn = document.getElementById('profile-btn');
     if (profileBtn && currentUser) {
         profileBtn.title = currentUser.name || 'Профиль';
-        // Можно добавить аватар или другое отображение
     }
 }
 
@@ -281,48 +1190,13 @@ function initializeAllLayouts() {
     layouts.forEach(layoutId => {
         const layout = document.getElementById(layoutId);
         if (layout) {
-            // Инициализируем с fallback данными
-            initializePhysicsSubjects(layout, layoutId);
-        }
-    });
-}
-
-function initializePhysicsSubjects(layout, layoutId) {
-    let classNumber;
-    
-    switch(layoutId) {
-        case 'desktop9-layout':
-            classNumber = 7;
-            break;
-        case 'desktop10-layout':
-            classNumber = 8;
-            break;
-        case 'desktop11-layout':
-            classNumber = 9;
-            break;
-        default:
-            classNumber = currentUser ? currentUser.class_number : 7;
-    }
-    
-    const subjects = CONFIG.FALLBACK_DATA.SUBJECTS_BY_CLASS[classNumber] || CONFIG.FALLBACK_DATA.SUBJECTS_BY_CLASS[7];
-    const subjectCards = layout.querySelectorAll('.subject-card');
-    
-    subjectCards.forEach((card, index) => {
-        if (subjects[index]) {
-            const titleElement = card.querySelector('h3');
-            if (titleElement) {
-                titleElement.textContent = subjects[index].name;
-            }
-            
-            const progressFill = card.querySelector('.progress-fill');
-            const progressText = card.querySelector('.progress-text');
-            
-            if (progressFill) {
-                progressFill.style.width = `${subjects[index].progress_percent}%`;
-            }
-            if (progressText) {
-                progressText.textContent = `${subjects[index].progress_percent}% завершено`;
-            }
+            const subjectCards = layout.querySelectorAll('.subject-card');
+            subjectCards.forEach(card => {
+                const titleElement = card.querySelector('h3');
+                const progressText = card.querySelector('.progress-text');
+                if (titleElement) titleElement.textContent = 'Загрузка...';
+                if (progressText) progressText.textContent = '0% завершено';
+            });
         }
     });
 }
@@ -335,14 +1209,25 @@ function updateAllLeaderboards(leaderboardData) {
         
         leaderList.innerHTML = '';
         
+        if (leaderboardData.length === 0) {
+            const emptyMsg = document.createElement('li');
+            emptyMsg.className = 'leader-item';
+            emptyMsg.innerHTML = `
+                <div style="text-align: center; width: 100%; padding: 10px; color: #666;">
+                    <i class="fas fa-database"></i> Таблица лидеров пуста
+                </div>
+            `;
+            leaderList.appendChild(emptyMsg);
+            return;
+        }
+        
         const topThree = leaderboardData.slice(0, 3);
         
         topThree.forEach((item, index) => {
             const li = document.createElement('li');
             li.className = 'leader-item';
-            const displayName = item.full_name || item.name || item.username || `Ученик ${index + 1}`;
+            const displayName = item.name || item.username || `Ученик ${index + 1}`;
             
-            // Создаем аватар с первой буквой имени
             const firstLetter = displayName.charAt(0).toUpperCase();
             const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
             const color = colors[index % colors.length];
@@ -361,21 +1246,6 @@ function updateAllLeaderboards(leaderboardData) {
     });
 }
 
-function useFallbackData() {
-    console.log('📦 Используем резервные данные...');
-    updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
-    
-    // Обновляем предметы из fallback данных
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
-    
-    layouts.forEach(layoutId => {
-        const layout = document.getElementById(layoutId);
-        if (layout) {
-            initializePhysicsSubjects(layout, layoutId);
-        }
-    });
-}
-
 // ==================== СИСТЕМА АВТОРИЗАЦИИ ====================
 
 function openAuthModal() {
@@ -383,11 +1253,7 @@ function openAuthModal() {
     if (authModal) {
         authModal.classList.add('show');
         document.body.style.overflow = 'hidden';
-        
-        // Показываем форму входа по умолчанию
         switchAuthTab('login');
-        
-        // Очищаем сообщения
         clearAuthMessages();
     }
 }
@@ -397,8 +1263,6 @@ function closeAuthModal() {
     if (authModal) {
         authModal.classList.remove('show');
         document.body.style.overflow = '';
-        
-        // Очищаем формы
         clearAuthForms();
     }
 }
@@ -459,43 +1323,33 @@ async function handleLogin(event) {
     const password = document.getElementById('login-password').value;
     const rememberMe = document.getElementById('remember-me').checked;
     
-    // Валидация
     if (!email || !password) {
         showAuthMessage('Заполните все поля', 'error');
-        return;
-    }
-    
-    if (!validateEmail(email)) {
-        showAuthMessage('Введите корректный email', 'error');
         return;
     }
     
     try {
         showAuthMessage('Выполняется вход...', 'info');
         
-        // Попытка входа через API
-        try {
-            const response = await apiRequest('/api/login', {
-                method: 'POST',
-                body: JSON.stringify({ email, password })
-            });
-            
-            // Сохраняем пользователя из ответа сервера
+        const response = await apiRequest('/api/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+        
+        if (response.success && response.user) {
             const user = {
-                id: response.user?.id || Date.now(),
+                id: response.user.id,
                 email: email,
-                name: response.user?.name || email.split('@')[0],
-                class_number: response.user?.class_number || 7,
+                name: response.user.name || email.split('@')[0],
+                class_number: response.user.class_number || 7,
                 remember_me: rememberMe,
                 token: response.token
             };
             
-            // Сохраняем токен
             if (response.token) {
                 saveAuthToken(response.token);
             }
             
-            // Сохраняем пользователя
             saveUserSession(user, rememberMe);
             
             showAuthMessage('Вход выполнен успешно!', 'success');
@@ -505,37 +1359,14 @@ async function handleLogin(event) {
                 showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
                 updateUserInterface();
                 
-                // Загружаем данные с сервера после входа
                 loadServerData();
             }, 1500);
-            
-        } catch (apiError) {
-            // Если API недоступен, используем демо-режим
-            console.log('API недоступен, используем демо-режим:', apiError);
-            
-            // Демо-пользователь
-            const user = {
-                id: Date.now(),
-                email: email,
-                name: email.split('@')[0],
-                class_number: 7,
-                remember_me: rememberMe
-            };
-            
-            // Сохраняем пользователя
-            saveUserSession(user, rememberMe);
-            
-            showAuthMessage('Демо-вход выполнен! (API недоступен)', 'success');
-            
-            setTimeout(() => {
-                closeAuthModal();
-                showCenterMessage(`Добро пожаловать в демо-режиме, ${user.name}!`, 'fa-user-check');
-                updateUserInterface();
-            }, 1500);
+        } else {
+            throw new Error(response.message || 'Неверные учетные данные');
         }
         
     } catch (error) {
-        showAuthMessage(error.message || 'Ошибка входа', 'error');
+        showAuthMessage(error.message || 'Ошибка входа. Проверьте подключение к БД', 'error');
     }
 }
 
@@ -549,19 +1380,8 @@ async function handleRegister(event) {
     const classNumber = document.getElementById('register-class').value;
     const termsAccepted = document.getElementById('register-terms').checked;
     
-    // Валидация
     if (!name || !email || !password || !passwordConfirm || !classNumber) {
         showAuthMessage('Заполните все поля', 'error');
-        return;
-    }
-    
-    if (!validateEmail(email)) {
-        showAuthMessage('Введите корректный email', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showAuthMessage('Пароль должен быть не менее 6 символов', 'error');
         return;
     }
     
@@ -578,27 +1398,25 @@ async function handleRegister(event) {
     try {
         showAuthMessage('Регистрация...', 'info');
         
-        // Попытка регистрации через API
-        try {
-            const response = await apiRequest('/api/register', {
-                method: 'POST',
-                body: JSON.stringify({
-                    email,
-                    password,
-                    fullName: name,
-                    classNumber: parseInt(classNumber)
-                })
-            });
-            
+        const response = await apiRequest('/api/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email,
+                password,
+                fullName: name,
+                classNumber: parseInt(classNumber)
+            })
+        });
+        
+        if (response.success) {
             const user = {
-                id: response.user?.id || Date.now(),
+                id: response.user.id,
                 email: email,
                 name: name,
                 class_number: parseInt(classNumber),
                 token: response.token
             };
             
-            // Сохраняем токен
             if (response.token) {
                 saveAuthToken(response.token);
             }
@@ -612,34 +1430,14 @@ async function handleRegister(event) {
                 showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
                 updateUserInterface();
                 
-                // Загружаем данные с сервера
                 loadServerData();
             }, 1500);
-            
-        } catch (apiError) {
-            // Если API недоступен, используем демо-режим
-            console.log('API недоступен, используем демо-регистрацию:', apiError);
-            
-            const user = {
-                id: Date.now(),
-                email: email,
-                name: name,
-                class_number: parseInt(classNumber)
-            };
-            
-            saveUserSession(user, true);
-            
-            showAuthMessage('Регистрация успешна!', 'success');
-            
-            setTimeout(() => {
-                closeAuthModal();
-                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
-                updateUserInterface();
-            }, 1500);
+        } else {
+            throw new Error(response.message || 'Ошибка регистрации');
         }
         
     } catch (error) {
-        showAuthMessage(error.message || 'Ошибка регистрации', 'error');
+        showAuthMessage(error.message || 'Ошибка регистрации. Проверьте подключение к БД', 'error');
     }
 }
 
@@ -664,19 +1462,23 @@ function logoutUser() {
     showCenterMessage('Вы вышли из системы', 'fa-sign-out-alt');
     updateUserInterface();
     
-    // Возвращаем демо-данные
-    useFallbackData();
-}
-
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
+    const leaderboards = document.querySelectorAll('.leader-list');
+    leaderboards.forEach(leaderList => {
+        if (leaderList) {
+            leaderList.innerHTML = `
+                <li class="leader-item">
+                    <div style="text-align: center; width: 100%; padding: 10px; color: #666;">
+                        <i class="fas fa-sign-in-alt"></i> Войдите для просмотра лидерборда
+                    </div>
+                </li>
+            `;
+        }
+    });
 }
 
 // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
 
 function setupEventListeners() {
-    // Переключение темы
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
         themeToggle.addEventListener('change', function() {
@@ -691,7 +1493,6 @@ function setupEventListeners() {
         });
     }
     
-    // Переключение классов
     document.querySelectorAll('.class-btn').forEach(button => {
         button.addEventListener('click', function() {
             const selectedClass = this.getAttribute('data-class');
@@ -700,24 +1501,14 @@ function setupEventListeners() {
             if (currentUser) {
                 currentUser.class_number = parseInt(selectedClass);
                 localStorage.setItem('scool_user', JSON.stringify(currentUser));
-            }
-            
-            const layoutId = getLayoutIdByClass(selectedClass);
-            const layout = document.getElementById(layoutId);
-            if (layout) {
-                // Если есть соединение с сервером, загружаем данные
-                if (isAuthenticated) {
-                    loadSubjectsForClass(selectedClass);
-                } else {
-                    initializePhysicsSubjects(layout, layoutId);
-                }
+                
+                loadSubjectsForClass(selectedClass);
             }
             
             console.log(`Переключились на ${selectedClass} класс`);
         });
     });
     
-    // Поиск
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         let searchTimeout;
@@ -731,15 +1522,10 @@ function setupEventListeners() {
             }
             
             searchTimeout = setTimeout(() => {
-                const localResults = CONFIG.FALLBACK_DATA.SEARCH.filter(item => 
-                    item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                    item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-                displaySearchResults(localResults, searchTerm);
+                searchInDatabase(searchTerm);
             }, 300);
         });
         
-        // Закрытие результатов при клике вне поля поиска
         document.addEventListener('click', function(event) {
             const searchResults = document.getElementById('search-results');
             if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
@@ -748,68 +1534,38 @@ function setupEventListeners() {
         });
     }
     
-    // Кнопка "Вся таблица" - ПЛАШКА
-    document.getElementById('full-table-btn')?.addEventListener('click', function() {
-        showCenterMessage('Функция "Лидеры турнира" в разработке!', 'fa-trophy');
-    });
-    
-    // Иконка уведомлений - ПЛАШКА
-    document.getElementById('notification-btn')?.addEventListener('click', function() {
-        if (!isAuthenticated) {
-            openAuthModal();
-        } else {
-            showCenterMessage('Функция "Уведомления" в разработке!', 'fa-bell');
-        }
-    });
-    
-    // Иконка профиля - ОТКРЫТИЕ МОДАЛКИ АВТОРИЗАЦИИ ИЛИ ПРОФИЛЯ
     document.getElementById('profile-btn')?.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
         if (isAuthenticated && currentUser) {
-            // Если пользователь авторизован, показываем меню профиля
             showProfileMenu();
         } else {
-            // Иначе открываем модалку авторизации
             openAuthModal();
         }
     });
     
-    // Кнопки "Написать нам" - СООБЩЕНИЕ С ПОЧТОЙ
     document.querySelectorAll('.mail-button').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
             const email = this.getAttribute('data-email');
             showEmailMessage(email);
         });
     });
     
-    // Кнопки "На главную"
     document.getElementById('home-from-desktop9')?.addEventListener('click', goToHome);
     document.getElementById('home-from-desktop10')?.addEventListener('click', goToHome);
     document.getElementById('home-from-desktop11')?.addEventListener('click', goToHome);
     
-    // Кнопка закрытия центральной плашки
-    document.getElementById('close-center-message')?.addEventListener('click', function() {
-        hideCenterMessage();
-    });
-    
-    // ============ ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА ============
-    
-    // Закрытие модального окна
     document.querySelector('.auth-close')?.addEventListener('click', closeAuthModal);
     
-    // Клик вне модального окна для закрытия
     document.getElementById('auth-modal')?.addEventListener('click', function(e) {
         if (e.target === this) {
             closeAuthModal();
         }
     });
     
-    // Переключение вкладок
     document.querySelectorAll('.auth-tab-btn').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
@@ -817,27 +1573,9 @@ function setupEventListeners() {
         });
     });
     
-    // Отправка формы входа
     document.getElementById('login-form')?.addEventListener('submit', handleLogin);
-    
-    // Отправка формы регистрации
     document.getElementById('register-form')?.addEventListener('submit', handleRegister);
     
-    // Кнопки социальных сетей
-    document.querySelectorAll('.auth-social-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const provider = this.classList.contains('google') ? 'Google' : 'VK';
-            showCenterMessage(`Вход через ${provider} в разработке!`, 'fa-external-link-alt');
-        });
-    });
-    
-    // Ссылка "Забыли пароль?"
-    document.querySelector('.auth-forgot')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        showCenterMessage('Функция восстановления пароля в разработке!', 'fa-key');
-    });
-    
-    // Закрытие по Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeAuthModal();
@@ -845,7 +1583,6 @@ function setupEventListeners() {
     });
 }
 
-// Функция для загрузки предметов для класса
 async function loadSubjectsForClass(classNumber) {
     try {
         const subjects = await apiRequest(`/api/subjects/${classNumber}`);
@@ -858,7 +1595,7 @@ async function loadSubjectsForClass(classNumber) {
                     if (subjects[index]) {
                         const titleElement = card.querySelector('h3');
                         if (titleElement) {
-                            titleElement.textContent = subjects[index].name || 'Физика';
+                            titleElement.textContent = subjects[index].name || 'Предмет';
                         }
                         
                         const progressFill = card.querySelector('.progress-fill');
@@ -877,7 +1614,18 @@ async function loadSubjectsForClass(classNumber) {
             }
         }
     } catch (error) {
-        console.log('Using fallback subjects for class', classNumber);
+        console.error('Ошибка загрузки предметов:', error);
+        showCenterMessage('Нет данных о предметах в БД', 'fa-database');
+    }
+}
+
+async function searchInDatabase(searchTerm) {
+    try {
+        const results = await apiRequest(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+        displaySearchResults(results, searchTerm);
+    } catch (error) {
+        console.error('Ошибка поиска в БД:', error);
+        displaySearchResults([], searchTerm);
     }
 }
 
@@ -913,10 +1661,8 @@ function showProfileMenu() {
         </div>
     `;
     
-    // Удаляем предыдущие меню
     document.querySelectorAll('.profile-menu-overlay').forEach(el => el.remove());
     
-    // Создаем стили для меню
     const styleId = 'profile-menu-styles';
     let styleElement = document.getElementById(styleId);
     
@@ -949,14 +1695,8 @@ function showProfileMenu() {
             }
             
             @keyframes slideDown {
-                from {
-                    transform: translateY(-20px);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
+                from { transform: translateY(-20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
             }
             
             .profile-header {
@@ -968,24 +1708,11 @@ function showProfileMenu() {
                 align-items: center;
             }
             
-            .profile-header i {
-                font-size: 48px;
-            }
+            .profile-header i { font-size: 48px; }
+            .profile-header h3 { margin: 0 0 5px 0; font-size: 18px; }
+            .profile-header p { margin: 0; font-size: 14px; opacity: 0.9; }
             
-            .profile-header h3 {
-                margin: 0 0 5px 0;
-                font-size: 18px;
-            }
-            
-            .profile-header p {
-                margin: 0;
-                font-size: 14px;
-                opacity: 0.9;
-            }
-            
-            .profile-actions {
-                padding: 10px 0;
-            }
+            .profile-actions { padding: 10px 0; }
             
             .profile-action-btn {
                 width: 100%;
@@ -1002,46 +1729,26 @@ function showProfileMenu() {
                 transition: background 0.2s;
             }
             
-            .profile-action-btn:hover {
-                background: #f5f5f5;
-            }
-            
-            .profile-action-btn i {
-                width: 20px;
-                text-align: center;
-            }
-            
+            .profile-action-btn:hover { background: #f5f5f5; }
+            .profile-action-btn i { width: 20px; text-align: center; }
             .profile-action-btn.logout {
                 color: #f44336;
                 border-top: 1px solid #eee;
                 margin-top: 5px;
             }
             
-            body.dark-theme .profile-menu {
-                background: #1e1e1e;
-            }
-            
-            body.dark-theme .profile-action-btn {
-                color: #e0e0e0;
-            }
-            
-            body.dark-theme .profile-action-btn:hover {
-                background: #2d2d2d;
-            }
-            
-            body.dark-theme .profile-action-btn.logout {
-                border-top-color: #333;
-            }
+            body.dark-theme .profile-menu { background: #1e1e1e; }
+            body.dark-theme .profile-action-btn { color: #e0e0e0; }
+            body.dark-theme .profile-action-btn:hover { background: #2d2d2d; }
+            body.dark-theme .profile-action-btn.logout { border-top-color: #333; }
         `;
         document.head.appendChild(styleElement);
     }
     
-    // Добавляем меню в DOM
     const overlay = document.createElement('div');
     overlay.innerHTML = menuHtml;
     document.body.appendChild(overlay);
     
-    // Обработчики для кнопок меню
     overlay.querySelectorAll('.profile-action-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const action = this.dataset.action;
@@ -1061,19 +1768,16 @@ function showProfileMenu() {
                     break;
             }
             
-            // Закрываем меню
             overlay.remove();
         });
     });
     
-    // Закрытие меню при клике вне его
     overlay.addEventListener('click', function(e) {
         if (e.target === this) {
             this.remove();
         }
     });
     
-    // Закрытие по Escape
     const closeMenu = function(e) {
         if (e.key === 'Escape') {
             overlay.remove();
@@ -1083,9 +1787,7 @@ function showProfileMenu() {
     document.addEventListener('keydown', closeMenu);
 }
 
-// Показать сообщение с почтой
 function showEmailMessage(email) {
-    // Создаем стили для сообщения с почтой
     const styleId = 'email-message-styles';
     let styleElement = document.getElementById(styleId);
     
@@ -1107,10 +1809,7 @@ function showEmailMessage(email) {
                 animation: fadeIn 0.3s ease;
             }
             
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             
             .email-message-box {
                 background-color: white;
@@ -1128,16 +1827,9 @@ function showEmailMessage(email) {
                 color: #e0e0e0;
             }
             
-            @keyframes slideUp {
-                from { transform: translateY(30px); opacity: 0; }
-                to { transform: translateY(0); opacity: 1; }
-            }
+            @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
             
-            .email-icon-large {
-                font-size: 48px;
-                color: #87CEEB;
-                margin-bottom: 20px;
-            }
+            .email-icon-large { font-size: 48px; color: #87CEEB; margin-bottom: 20px; }
             
             .email-message-box h3 {
                 margin: 0 0 15px 0;
@@ -1145,9 +1837,7 @@ function showEmailMessage(email) {
                 color: #333;
             }
             
-            body.dark-theme .email-message-box h3 {
-                color: #e0e0e0;
-            }
+            body.dark-theme .email-message-box h3 { color: #e0e0e0; }
             
             .email-address {
                 font-size: 18px;
@@ -1174,15 +1864,9 @@ function showEmailMessage(email) {
                 line-height: 1.5;
             }
             
-            body.dark-theme .email-hint {
-                color: #aaa;
-            }
+            body.dark-theme .email-hint { color: #aaa; }
             
-            .email-buttons {
-                display: flex;
-                gap: 15px;
-                justify-content: center;
-            }
+            .email-buttons { display: flex; gap: 15px; justify-content: center; }
             
             .email-btn {
                 padding: 12px 24px;
@@ -1223,9 +1907,7 @@ function showEmailMessage(email) {
                 transform: translateY(-2px);
             }
             
-            body.dark-theme .email-close-btn:hover {
-                background-color: #444;
-            }
+            body.dark-theme .email-close-btn:hover { background-color: #444; }
             
             .copy-success {
                 color: #4CAF50;
@@ -1244,15 +1926,11 @@ function showEmailMessage(email) {
         document.head.appendChild(styleElement);
     }
     
-    // Удаляем предыдущие сообщения
-    const existingOverlays = document.querySelectorAll('.email-message-overlay');
-    existingOverlays.forEach(overlay => overlay.remove());
+    document.querySelectorAll('.email-message-overlay').forEach(overlay => overlay.remove());
     
-    // Создаем оверлей
     const overlay = document.createElement('div');
     overlay.className = 'email-message-overlay';
     
-    // Создаем сообщение
     overlay.innerHTML = `
         <div class="email-message-box">
             <i class="fas fa-envelope email-icon-large"></i>
@@ -1273,7 +1951,6 @@ function showEmailMessage(email) {
     
     document.body.appendChild(overlay);
     
-    // Обработчики событий
     const copyBtn = overlay.querySelector('.email-copy-btn');
     const closeBtn = overlay.querySelector('.email-close-btn');
     
@@ -1302,7 +1979,6 @@ function showEmailMessage(email) {
         }
     });
     
-    // Автозакрытие через 10 секунд
     setTimeout(() => {
         if (overlay.parentNode) {
             overlay.remove();
@@ -1310,7 +1986,6 @@ function showEmailMessage(email) {
     }, 10000);
 }
 
-// Показать центральную плашку (для уведомлений и кнопки "Вся таблица")
 function showCenterMessage(message, icon = 'fa-tools') {
     const centerMessage = document.getElementById('center-message');
     const centerIcon = document.getElementById('center-message-icon');
@@ -1318,20 +1993,16 @@ function showCenterMessage(message, icon = 'fa-tools') {
     
     if (!centerMessage || !centerIcon || !centerText) return;
     
-    // Устанавливаем иконку и текст
     centerIcon.className = `fas ${icon} center-message-icon`;
     centerText.textContent = message;
     
-    // Показываем плашку
     centerMessage.classList.add('show');
     
-    // Автозакрытие через 4 секунды
     setTimeout(() => {
         hideCenterMessage();
     }, 4000);
 }
 
-// Скрыть центральную плашку
 function hideCenterMessage() {
     const centerMessage = document.getElementById('center-message');
     if (centerMessage) {
@@ -1375,13 +2046,8 @@ function displaySearchResults(results, searchTerm) {
                 searchResults.classList.remove('show');
                 if (searchInput) searchInput.value = '';
                 
-                if (item.type === 'Таблица лидеров') {
+                if (item.type === 'Ученик') {
                     document.querySelector('.leaderboard')?.scrollIntoView({ behavior: 'smooth' });
-                } else if (item.type === 'Написать нам') {
-                    const mailButtons = document.querySelectorAll('.mail-button');
-                    if (mailButtons.length > 0) {
-                        mailButtons[0].click();
-                    }
                 } else if (item.type === 'Предмет') {
                     const activeLayout = getActiveLayout();
                     if (activeLayout) {
@@ -1399,8 +2065,6 @@ function displaySearchResults(results, searchTerm) {
     
     searchResults.classList.add('show');
 }
-
-// ==================== НАВИГАЦИЯ И МАКЕТЫ ====================
 
 function getLayoutIdByClass(className) {
     switch(className) {
@@ -1462,8 +2126,6 @@ function updatePageTitle(classNumber) {
     });
 }
 
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-
 function highlightText(text, searchTerm) {
     if (!searchTerm) return text;
     const regex = new RegExp(`(${searchTerm})`, 'gi');
@@ -1492,9 +2154,8 @@ function updateThemeLabels(isDark) {
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - SCool инициализация для Railway');
+    console.log('DOMContentLoaded - SCool для Railway');
     
-    // Инициализация темы
     const themeToggle = document.getElementById('theme-toggle');
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-theme');
@@ -1504,10 +2165,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateThemeLabels(false);
     }
     
-    // Инициализация приложения
     initApp();
     
-    // Начальное состояние макетов
     document.getElementById('desktop9-layout').style.display = 'none';
     document.getElementById('desktop10-layout').style.display = 'none';
     document.getElementById('desktop11-layout').style.display = 'none';
@@ -1515,7 +2174,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
 });
 
-// Дополнительная защита от английских названий
 function forceRussianTitles() {
     const replacements = {
         'Physics': 'Физика',
@@ -1536,13 +2194,10 @@ function forceRussianTitles() {
         if (currentText === '' || replacements[currentText]) {
             const newText = replacements[currentText] || 'Физика';
             if (currentText !== newText) {
-                console.log(`Исправляем: "${currentText}" → "${newText}"`);
                 title.textContent = newText;
             }
         }
     });
 }
 
-// Запускаем проверку
 setTimeout(forceRussianTitles, 500);
-setTimeout(forceRussianTitles, 2000);
