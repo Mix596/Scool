@@ -101,10 +101,10 @@ let pool = null;
 async function initializeDatabase() {
   // Railway предоставляет MYSQL_URL для MySQL подключения
   if (!mysqlUrl) {
-    console.log('  MYSQL_URL not found - running in local mode');
+    console.log('  ❌ MYSQL_URL not found - SERVER CANNOT START WITHOUT DATABASE');
     console.log('   Railway должен предоставить MYSQL_URL через ${{ MySQL.MYSQL_URL }}');
     console.log('   Добавьте в Variables вашего сервиса: MYSQL_URL = ${{ MySQL.MYSQL_URL }}');
-    return null;
+    throw new Error('MYSQL_URL is required for server operation');
   }
 
   try {
@@ -133,7 +133,7 @@ async function initializeDatabase() {
     
     // Тестируем подключение
     const connection = await pool.getConnection();
-    console.log(' DATABASE CONNECTED');
+    console.log('✅ DATABASE CONNECTED');
     
     // Получаем информацию о подключении
     const [versionRows] = await connection.query('SELECT VERSION() as version');
@@ -159,11 +159,10 @@ async function initializeDatabase() {
     return pool;
     
   } catch (err) {
-    console.error(' DATABASE CONNECTION FAILED:', err.message);
+    console.error('❌ DATABASE CONNECTION FAILED:', err.message);
     console.error('   Error code:', err.code);
     console.error('   Error number:', err.errno);
-    console.log('  Running without database connection');
-    return null;
+    throw new Error(`Database connection failed: ${err.message}`);
   }
 }
 
@@ -172,7 +171,7 @@ async function createTables() {
   if (!pool) return;
   
   try {
-    console.log('\n CREATING DATABASE TABLES...');
+    console.log('\n📋 CREATING DATABASE TABLES...');
     
     // Создаем базу данных если не существует
     const dbName = process.env.MYSQLDATABASE || 'railway';
@@ -192,7 +191,7 @@ async function createTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
-    console.log(' leaderboard table ready');
+    console.log('✅ leaderboard table ready');
 
     // Таблица subjects
     await pool.query(`
@@ -207,7 +206,7 @@ async function createTables() {
         UNIQUE KEY unique_subject_class (name, class)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
-    console.log(' subjects table ready');
+    console.log('✅ subjects table ready');
 
     // Таблица users
     await pool.query(`
@@ -220,9 +219,9 @@ async function createTables() {
         CONSTRAINT class_check CHECK (class >= 1 AND class <= 11)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
-    console.log(' users table ready');
+    console.log('✅ users table ready');
 
-    console.log(' DATABASE TABLES READY');
+    console.log('✅ DATABASE TABLES READY');
     
     // Проверим таблицы
     await checkTables();
@@ -231,8 +230,8 @@ async function createTables() {
     await seedDatabase();
     
   } catch (err) {
-    console.error(' DATABASE SETUP ERROR:', err.message);
-    console.error('Full error:', err);
+    console.error('❌ DATABASE SETUP ERROR:', err.message);
+    throw err;
   }
 }
 
@@ -242,7 +241,7 @@ async function checkTables() {
   
   try {
     const [tables] = await pool.query('SHOW TABLES');
-    console.log('\n EXISTING TABLES:');
+    console.log('\n📊 EXISTING TABLES:');
     if (tables.length === 0) {
       console.log('   No tables found');
     } else {
@@ -261,7 +260,7 @@ async function seedDatabase() {
   if (!pool) return;
   
   try {
-    console.log('\n SEEDING DATABASE...');
+    console.log('\n🌱 SEEDING DATABASE...');
     
     // Проверяем leaderboard
     const [leaderboardResult] = await pool.query('SELECT COUNT(*) as count FROM leaderboard');
@@ -275,10 +274,6 @@ async function seedDatabase() {
         ('evgeniy', 'Evgeniy S.', 900, 3),
         ('maria_k', 'Maria K.', 850, 4),
         ('alex_t', 'Alex T.', 800, 5)
-        ON DUPLICATE KEY UPDATE 
-          name = VALUES(name),
-          score = VALUES(score),
-          \`rank\` = VALUES(\`rank\`)
       `);
       console.log(`    Added ${Math.min(5, 5)} leaderboard entries`);
     } else {
@@ -299,18 +294,16 @@ async function seedDatabase() {
         ('Physics', 9, 60),
         ('Biology', 9, 85),
         ('Informatics', 10, 92)
-        ON DUPLICATE KEY UPDATE 
-          progress = VALUES(progress)
       `);
       console.log(`    Added ${Math.min(7, 7)} subject entries`);
     } else {
       console.log(`     Subjects: ${subjectsCount} entries found`);
     }
     
-    console.log(' SEEDING COMPLETE');
+    console.log('✅ SEEDING COMPLETE');
     
   } catch (err) {
-    console.error(' SEED ERROR:', err.message);
+    console.error('⚠️  SEED ERROR:', err.message);
   }
 }
 
@@ -319,10 +312,10 @@ const projectRoot = process.cwd();
 const frontendPath = path.join(projectRoot, 'frontend');
 const frontendExists = fs.existsSync(frontendPath);
 
-console.log('\n FILE SYSTEM PATHS:');
+console.log('\n📁 FILE SYSTEM PATHS:');
 console.log(`   Project Root: ${projectRoot}`);
 console.log(`   Frontend Dir: ${frontendPath}`);
-console.log(`   Frontend Exists: ${frontendExists ? ' YES' : ' NO'}`);
+console.log(`   Frontend Exists: ${frontendExists ? ' ✅ YES' : ' ❌ NO'}`);
 
 if (frontendExists) {
   console.log('\n   FRONTEND FILES:');
@@ -342,131 +335,31 @@ if (frontendExists) {
       }
     }
   }));
-  console.log(' Static files configured');
+  console.log('✅ Static files configured');
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ==========
 initializeDatabase().then(() => {
-  console.log('\n DATABASE INITIALIZATION COMPLETE');
+  console.log('\n✅ DATABASE INITIALIZATION COMPLETE');
 }).catch(err => {
-  console.error(' DATABASE INIT FAILED:', err);
-});
-
-// ========== HEALTH CHECK ==========
-app.get('/health', async (req, res) => {
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'scool-api',
-    port: detectedPort,
-    railway_port: process.env.PORT,
-    environment: process.env.NODE_ENV || 'development',
-    database: 'checking',
-    mysql_variables: {
-      MYSQL_URL: !!mysqlUrl,
-      MYSQLDATABASE: process.env.MYSQLDATABASE,
-      MYSQLHOST: process.env.MYSQLHOST,
-      MYSQLPORT: process.env.MYSQLPORT
-    }
-  };
-
-  try {
-    if (pool) {
-      await pool.query('SELECT 1');
-      health.database = 'connected';
-      health.database_status = 'healthy';
-      health.database_type = 'MySQL';
-    } else if (mysqlUrl) {
-      health.database = 'disconnected';
-      health.database_status = 'no_pool';
-      health.database_type = 'MySQL (MYSQL_URL found)';
-    } else {
-      health.database = 'local_mode';
-      health.database_status = 'not_configured';
-    }
-    
-    res.status(200).json(health);
-    
-  } catch (err) {
-    health.database = 'error';
-    health.database_error = err.message;
-    health.status = 'degraded';
-    res.status(200).json(health);
-  }
+  console.error('\n❌ DATABASE INIT FAILED:', err.message);
+  console.error('❌ SERVER CANNOT START WITHOUT DATABASE CONNECTION');
+  process.exit(1);
 });
 
 // ========== API ENDPOINTS ==========
-app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'SCool API',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-    port: detectedPort,
-    railway_port: process.env.PORT,
-    documentation: {
-      health: '/health',
-      api: '/api/health',
-      db_check: '/api/db-check',
-      subjects: '/api/subjects/:class',
-      leaderboard: '/api/leaderboard',
-      frontend: frontendExists ? '/app' : null
-    },
-    environment: {
-      node: process.version,
-      database: mysqlUrl ? 'MySQL configured' : 'local',
-      frontend: frontendExists
-    }
-  });
-});
 
-app.get('/api/health', async (req, res) => {
-  const apiHealth = {
-    status: 'operational',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-    port: detectedPort,
-    endpoints: {
-      subjects: 'active',
-      leaderboard: 'active',
-      score: 'active'
-    }
-  };
-
+// Проверка базы данных (основная проверка)
+app.get('/api/db-check', async (req, res) => {
   try {
-    if (pool) {
-      await pool.query('SELECT 1');
-      apiHealth.database = 'connected';
-    } else {
-      apiHealth.database = 'local_mode';
+    if (!pool) {
+      return res.status(503).json({
+        status: 'database_error',
+        message: 'Database connection not established',
+        timestamp: new Date().toISOString()
+      });
     }
     
-    res.status(200).json(apiHealth);
-  } catch (err) {
-    apiHealth.database = 'error';
-    apiHealth.error = err.message;
-    apiHealth.status = 'degraded';
-    res.status(200).json(apiHealth);
-  }
-});
-
-// Проверка базы данных
-app.get('/api/db-check', async (req, res) => {
-  if (!pool) {
-    return res.json({
-      status: 'local_mode',
-      message: 'Running without database connection',
-      mysql_url: !!mysqlUrl,
-      mysql_variables: {
-        MYSQL_URL: !!mysqlUrl,
-        MYSQLDATABASE: process.env.MYSQLDATABASE,
-        MYSQLHOST: process.env.MYSQLHOST
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-  
-  try {
     const [versionRows] = await pool.query('SELECT VERSION() as version');
     const [dbRows] = await pool.query('SELECT DATABASE() as db');
     const [statsRows] = await pool.query(`
@@ -490,27 +383,24 @@ app.get('/api/db-check', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (err) {
-    res.json({
-      status: 'error',
+    res.status(503).json({
+      status: 'database_error',
       message: err.message,
-      mysql_url: !!mysqlUrl,
       timestamp: new Date().toISOString()
     });
   }
 });
 
-// Получить предметы для класса
+// Получить предметы для класса (ТОЛЬКО ИЗ БАЗЫ ДАННЫХ)
 app.get('/api/subjects/:class', async (req, res) => {
   const classNum = parseInt(req.params.class);
   
   if (!pool) {
-    const fallbackData = [
-      { id: 1, name: 'Physics', class: classNum, progress: 95 },
-      { id: 2, name: 'Mathematics', class: classNum, progress: 88 },
-      { id: 3, name: 'Chemistry', class: classNum, progress: 78 },
-      { id: 4, name: 'Biology', class: classNum, progress: 85 }
-    ];
-    return res.json(fallbackData);
+    return res.status(503).json({
+      status: 'database_error',
+      message: 'Database connection not available',
+      timestamp: new Date().toISOString()
+    });
   }
   
   try {
@@ -519,36 +409,27 @@ app.get('/api/subjects/:class', async (req, res) => {
       [classNum]
     );
     
-    if (rows.length === 0) {
-      const defaultSubjects = [
-        { id: 1, name: 'Physics', class: classNum, progress: 0 },
-        { id: 2, name: 'Mathematics', class: classNum, progress: 0 },
-        { id: 3, name: 'Chemistry', class: classNum, progress: 0 },
-        { id: 4, name: 'Biology', class: classNum, progress: 0 }
-      ];
-      res.json(defaultSubjects);
-    } else {
-      res.json(rows);
-    }
+    // Если нет данных, возвращаем пустой массив
+    res.json(rows);
+    
   } catch (err) {
     console.error('Subjects error:', err);
-    res.json([
-      { id: 1, name: 'Physics', class: classNum, progress: 95 },
-      { id: 2, name: 'Mathematics', class: classNum, progress: 88 }
-    ]);
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-// Лидерборд
+// Лидерборд (ТОЛЬКО ИЗ БАЗЫ ДАННЫХ)
 app.get('/api/leaderboard', async (req, res) => {
   if (!pool) {
-    return res.json([
-      { id: 1, username: 'elena_v', name: 'Elena V.', score: 1200, rank: 1 },
-      { id: 2, username: 'vasya', name: 'Vasya P.', score: 1000, rank: 2 },
-      { id: 3, username: 'evgeniy', name: 'Evgeniy S.', score: 900, rank: 3 },
-      { id: 4, username: 'maria_k', name: 'Maria K.', score: 850, rank: 4 },
-      { id: 5, username: 'alex_t', name: 'Alex T.', score: 800, rank: 5 }
-    ]);
+    return res.status(503).json({
+      status: 'database_error',
+      message: 'Database connection not available',
+      timestamp: new Date().toISOString()
+    });
   }
   
   try {
@@ -556,32 +437,24 @@ app.get('/api/leaderboard', async (req, res) => {
       'SELECT * FROM leaderboard ORDER BY rank IS NULL, rank ASC LIMIT 20'
     );
     
-    if (rows.length === 0) {
-      const mockData = [
-        { id: 1, username: 'elena_v', name: 'Elena V.', score: 1200, rank: 1 },
-        { id: 2, username: 'vasya', name: 'Vasya P.', score: 1000, rank: 2 },
-        { id: 3, username: 'evgeniy', name: 'Evgeniy S.', score: 900, rank: 3 }
-      ];
-      res.json(mockData);
-    } else {
-      res.json(rows);
-    }
+    res.json(rows);
+    
   } catch (err) {
     console.error('Leaderboard error:', err);
-    res.json([
-      { id: 1, username: 'elena_v', name: 'Elena V.', score: 1200, rank: 1 },
-      { id: 2, username: 'vasya', name: 'Vasya P.', score: 1000, rank: 2 },
-      { id: 3, username: 'evgeniy', name: 'Evgeniy S.', score: 900, rank: 3 }
-    ]);
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-// Добавить/обновить результат
+// Добавить/обновить результат (ТОЛЬКО В БАЗУ ДАННЫХ)
 app.post('/api/score', async (req, res) => {
   if (!pool) {
-    return res.status(200).json({ 
+    return res.status(503).json({ 
       success: false, 
-      message: 'Database not available, running in local mode' 
+      message: 'Database connection not available' 
     });
   }
   
@@ -600,14 +473,17 @@ app.post('/api/score', async (req, res) => {
     try {
       await connection.beginTransaction();
       
+      // Вставляем или обновляем запись
       await connection.query(`
         INSERT INTO leaderboard (username, name, score, rank) 
         VALUES (?, ?, ?, 999)
         ON DUPLICATE KEY UPDATE 
           score = VALUES(score), 
+          name = VALUES(name),
           updated_at = CURRENT_TIMESTAMP
       `, [username, name, score]);
       
+      // Обновляем ранги всех пользователей
       await connection.query(`
         UPDATE leaderboard l
         JOIN (
@@ -621,6 +497,7 @@ app.post('/api/score', async (req, res) => {
       
       await connection.commit();
       
+      // Получаем обновленные данные
       const [result] = await connection.query(
         'SELECT * FROM leaderboard WHERE username = ?',
         [username]
@@ -629,7 +506,9 @@ app.post('/api/score', async (req, res) => {
       res.json({
         success: true,
         rank: result[0]?.rank || 999,
-        score: score
+        score: score,
+        username: username,
+        name: name
       });
       
     } catch (err) {
@@ -648,11 +527,12 @@ app.post('/api/score', async (req, res) => {
   }
 });
 
+// Обновить прогресс предмета (ТОЛЬКО В БАЗУ ДАННЫХ)
 app.post('/api/subject-progress', async (req, res) => {
   if (!pool) {
-    return res.status(200).json({ 
+    return res.status(503).json({ 
       success: false, 
-      message: 'Database not available' 
+      message: 'Database connection not available' 
     });
   }
   
@@ -666,6 +546,14 @@ app.post('/api/subject-progress', async (req, res) => {
       });
     }
     
+    // Проверяем корректность progress
+    if (progress < 0 || progress > 100) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Progress must be between 0 and 100' 
+      });
+    }
+    
     await pool.query(`
       INSERT INTO subjects (name, class, progress) 
       VALUES (?, ?, ?)
@@ -676,10 +564,12 @@ app.post('/api/subject-progress', async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: 'Progress updated' 
+      message: 'Progress updated successfully',
+      data: { name, class: classNum, progress }
     });
     
   } catch (err) {
+    console.error('Subject progress error:', err);
     res.status(500).json({ 
       success: false, 
       error: err.message 
@@ -687,13 +577,12 @@ app.post('/api/subject-progress', async (req, res) => {
   }
 });
 
+// Топ-10 игроков (ТОЛЬКО ИЗ БАЗЫ ДАННЫХ)
 app.get('/api/top10', async (req, res) => {
   if (!pool) {
-    return res.json([
-      { username: 'elena_v', name: 'Elena V.', score: 1200, rank: 1 },
-      { username: 'vasya', name: 'Vasya P.', score: 1000, rank: 2 },
-      { username: 'evgeniy', name: 'Evgeniy S.', score: 900, rank: 3 }
-    ]);
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
   }
   
   try {
@@ -708,7 +597,73 @@ app.get('/api/top10', async (req, res) => {
   }
 });
 
-// ========== ДИАГНОСТИЧЕСКИЕ ЭНДПОИНТЫ ==========
+// ========== ОСТАЛЬНЫЕ ЭНДПОИНТЫ (оставлены без изменений) ==========
+
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'SCool API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    port: detectedPort,
+    railway_port: process.env.PORT,
+    database: pool ? 'connected' : 'disconnected',
+    documentation: {
+      health: '/health',
+      db_check: '/api/db-check',
+      subjects: '/api/subjects/:class',
+      leaderboard: '/api/leaderboard',
+      score: 'POST /api/score',
+      frontend: frontendExists ? '/app' : null
+    },
+    environment: {
+      node: process.version,
+      database: mysqlUrl ? 'MySQL configured' : 'not configured',
+      frontend: frontendExists
+    }
+  });
+});
+
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'checking',
+    timestamp: new Date().toISOString(),
+    service: 'scool-api',
+    port: detectedPort,
+    railway_port: process.env.PORT,
+    environment: process.env.NODE_ENV || 'development',
+    database: 'checking',
+    mysql_variables: {
+      MYSQL_URL: !!mysqlUrl,
+      MYSQLDATABASE: process.env.MYSQLDATABASE,
+      MYSQLHOST: process.env.MYSQLHOST,
+      MYSQLPORT: process.env.MYSQLPORT
+    }
+  };
+
+  try {
+    if (pool) {
+      await pool.query('SELECT 1');
+      health.database = 'connected';
+      health.database_status = 'healthy';
+      health.database_type = 'MySQL';
+      health.status = 'healthy';
+    } else {
+      health.database = 'disconnected';
+      health.database_status = 'no_pool';
+      health.status = 'unhealthy';
+    }
+    
+    res.status(200).json(health);
+    
+  } catch (err) {
+    health.database = 'error';
+    health.database_error = err.message;
+    health.status = 'unhealthy';
+    res.status(200).json(health);
+  }
+});
+
 app.get('/api/debug/vars', (req, res) => {
   const debugInfo = {
     port: {
@@ -717,6 +672,7 @@ app.get('/api/debug/vars', (req, res) => {
     },
     database: {
       mysql_url: mysqlUrl ? 'exists (masked)' : 'not found',
+      pool_initialized: !!pool,
       mysql_variables: {}
     },
     railway: {
@@ -744,7 +700,7 @@ app.get('/api/debug/vars', (req, res) => {
 app.post('/api/db/init', async (req, res) => {
   try {
     if (!pool) {
-      return res.status(500).json({ 
+      return res.status(503).json({ 
         success: false, 
         message: 'Database pool not initialized' 
       });
@@ -754,7 +710,7 @@ app.post('/api/db/init', async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: 'Database tables created' 
+      message: 'Database tables created successfully' 
     });
   } catch (err) {
     res.status(500).json({ 
@@ -800,7 +756,6 @@ app.use((req, res) => {
       available_endpoints: [
         '/',
         '/health',
-        '/api/health',
         '/api/db-check',
         '/api/subjects/:class',
         '/api/leaderboard',
@@ -822,43 +777,41 @@ app.use((err, req, res, next) => {
 // ========== ЗАПУСК СЕРВЕРА ==========
 const server = app.listen(detectedPort, '0.0.0.0', () => {
   console.log('\n' + '='.repeat(60));
-  console.log(` SERVER RUNNING ON PORT: ${detectedPort}`);
+  console.log(`✅ SERVER RUNNING ON PORT: ${detectedPort}`);
   console.log(` Internal URL: http://0.0.0.0:${detectedPort}`);
   console.log(` Local URL:    http://localhost:${detectedPort}`);
   console.log('='.repeat(60));
   console.log('\n📡 PUBLIC ENDPOINTS:');
   console.log(`    Main API:     https://YOUR_PROJECT.railway.app/`);
-  console.log(`     Health:       https://YOUR_PROJECT.railway.app/health`);
+  console.log(`    Health:       https://YOUR_PROJECT.railway.app/health`);
   console.log(`    DB Check:     https://YOUR_PROJECT.railway.app/api/db-check`);
-  console.log(`   Subjects:     https://YOUR_PROJECT.railway.app/api/subjects/7`);
+  console.log(`    Subjects:     https://YOUR_PROJECT.railway.app/api/subjects/7`);
   console.log(`    Leaderboard:  https://YOUR_PROJECT.railway.app/api/leaderboard`);
   console.log(`    Frontend:     https://YOUR_PROJECT.railway.app/app`);
   console.log(`    Debug:        https://YOUR_PROJECT.railway.app/api/debug/vars`);
   
-  if (mysqlUrl) {
-    console.log(`\n💾 DATABASE:       ${pool ? ' CONNECTED' : ' DISCONNECTED'}`);
-    if (pool) {
-      console.log(`   Type: MySQL via MYSQL_URL`);
-      console.log(`   Database: ${process.env.MYSQLDATABASE || 'railway'}`);
-    }
+  if (mysqlUrl && pool) {
+    console.log(`\n💾 DATABASE:       ✅ CONNECTED`);
+    console.log(`   Type: MySQL via MYSQL_URL`);
+    console.log(`   Database: ${process.env.MYSQLDATABASE || 'railway'}`);
   } else {
-    console.log(`\n💾 DATABASE:       ⚠️  LOCAL MODE (no MYSQL_URL)`);
+    console.log(`\n💾 DATABASE:       ❌ DISCONNECTED`);
   }
   
   if (frontendExists) {
-    console.log(`\n🌐 FRONTEND:        DETECTED`);
+    console.log(`\n🌐 FRONTEND:        ✅ DETECTED`);
     console.log(`   App:         http://localhost:${detectedPort}/app`);
     console.log(`   CSS:         http://localhost:${detectedPort}/style.css`);
     console.log(`   JS:          http://localhost:${detectedPort}/script.js`);
   } else {
-    console.log(`\n🌐 FRONTEND:        NOT FOUND`);
+    console.log(`\n🌐 FRONTEND:        ❌ NOT FOUND`);
   }
   
   console.log('\n' + '='.repeat(60));
-  console.log(' READY FOR RAILWAY DEPLOYMENT');
+  console.log('🚀 READY FOR RAILWAY DEPLOYMENT');
   console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(` Port: ${detectedPort} (Railway: ${process.env.PORT || 'auto'})`);
-  console.log(` Database: ${mysqlUrl ? 'MySQL configured' : 'Local mode'}`);
+  console.log(` Database: ${pool ? '✅ MySQL connected' : '❌ No database'}`);
   console.log('='.repeat(60));
 });
 
