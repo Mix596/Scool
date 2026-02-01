@@ -629,11 +629,11 @@ async function handleRegister(event) {
             
             saveUserSession(user, true);
             
-            showAuthMessage('Демо-регистрация успешна! (API недоступен)', 'success');
+            showAuthMessage('Регистрация успешна!', 'success');
             
             setTimeout(() => {
                 closeAuthModal();
-                showCenterMessage(`Добро пожаловать в демо-режиме, ${user.name}!`, 'fa-user-plus');
+                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
                 updateUserInterface();
             }, 1500);
         }
