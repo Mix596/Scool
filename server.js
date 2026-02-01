@@ -123,21 +123,8 @@ async function initializeDatabase() {
     console.log(`   User: ${dbRows[0].user}`);
     console.log(`   MySQL Version: ${versionRows[0].version}`);
     
-    // Показываем существующие таблицы
-    const [tables] = await connection.query('SHOW TABLES');
-    console.log('\n📊 EXISTING TABLES IN DATABASE:');
-    
-    if (tables.length === 0) {
-      console.log('   No tables found');
-    } else {
-      tables.forEach(table => {
-        const tableName = Object.values(table)[0];
-        console.log(`   - ${tableName}`);
-      });
-    }
-    
-    // Проверяем структуру таблиц
-    await checkTableStructure(connection);
+    // Проверяем существующие таблицы
+    await checkAndCreateTables(connection);
     
     connection.release();
     
@@ -150,40 +137,125 @@ async function initializeDatabase() {
   }
 }
 
-// Проверка структуры существующих таблиц
-async function checkTableStructure(connection) {
+// Проверка и создание таблиц если их нет
+async function checkAndCreateTables(connection) {
   try {
-    console.log('\n🔍 CHECKING TABLE STRUCTURE...');
+    console.log('\n🔍 CHECKING DATABASE TABLES...');
     
-    // Проверяем наличие таблицы leaderboard
-    try {
-      const [leaderboardColumns] = await connection.query('DESCRIBE leaderboard');
-      console.log('✅ leaderboard table exists');
-      console.log(`   Columns: ${leaderboardColumns.map(col => col.Field).join(', ')}`);
-    } catch (err) {
-      console.log('⚠️  leaderboard table not found or error:', err.message);
-    }
+    // Создаем базу данных если не существует
+    await connection.query('CREATE DATABASE IF NOT EXISTS railway');
+    await connection.query('USE railway');
     
-    // Проверяем наличие таблицы subjects
-    try {
-      const [subjectsColumns] = await connection.query('DESCRIBE subjects');
-      console.log('✅ subjects table exists');
-      console.log(`   Columns: ${subjectsColumns.map(col => col.Field).join(', ')}`);
-    } catch (err) {
-      console.log('⚠️  subjects table not found or error:', err.message);
-    }
+    // Таблица users
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        class INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT class_check CHECK (class >= 1 AND class <= 11)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('✅ users table ready');
     
-    // Проверяем наличие таблицы users
-    try {
-      const [usersColumns] = await connection.query('DESCRIBE users');
-      console.log('✅ users table exists');
-      console.log(`   Columns: ${usersColumns.map(col => col.Field).join(', ')}`);
-    } catch (err) {
-      console.log('⚠️  users table not found or error:', err.message);
-    }
+    // Таблица leaderboard
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS leaderboard (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        score INT DEFAULT 0,
+        \`rank\` INT DEFAULT 999,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('✅ leaderboard table ready');
+    
+    // Таблица subjects
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS subjects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        class INT NOT NULL,
+        progress INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT progress_check CHECK (progress >= 0 AND progress <= 100),
+        UNIQUE KEY unique_subject_class (name, class)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('✅ subjects table ready');
+    
+    // Добавляем тестовые данные если таблицы пустые
+    await seedDatabase(connection);
     
   } catch (err) {
-    console.error('Error checking table structure:', err.message);
+    console.error('❌ DATABASE SETUP ERROR:', err.message);
+  }
+}
+
+// Добавление тестовых данных
+async function seedDatabase(connection) {
+  try {
+    console.log('\n🌱 SEEDING DATABASE WITH TEST DATA...');
+    
+    // Проверяем users
+    const [usersCount] = await connection.query('SELECT COUNT(*) as count FROM users');
+    if (parseInt(usersCount[0].count) === 0) {
+      await connection.query(`
+        INSERT INTO users (username, email, password, class) VALUES
+        ('elena_v', 'elena@example.com', 'password123', 10),
+        ('vasya_p', 'vasya@example.com', 'password123', 9),
+        ('evgeniy_s', 'evgeniy@example.com', 'password123', 11),
+        ('maria_k', 'maria@example.com', 'password123', 8),
+        ('alex_t', 'alex@example.com', 'password123', 10)
+      `);
+      console.log('✅ Test users added');
+    }
+    
+    // Проверяем leaderboard
+    const [leaderboardCount] = await connection.query('SELECT COUNT(*) as count FROM leaderboard');
+    if (parseInt(leaderboardCount[0].count) === 0) {
+      await connection.query(`
+        INSERT INTO leaderboard (username, name, score, \`rank\`) VALUES
+        ('elena_v', 'Елена Васильева', 1200, 1),
+        ('vasya_p', 'Василий Петров', 1000, 2),
+        ('evgeniy_s', 'Евгений Сидоров', 900, 3),
+        ('maria_k', 'Мария Кузнецова', 850, 4),
+        ('alex_t', 'Алексей Тихонов', 800, 5)
+      `);
+      console.log('✅ Test leaderboard added');
+    }
+    
+    // Проверяем subjects
+    const [subjectsCount] = await connection.query('SELECT COUNT(*) as count FROM subjects');
+    if (parseInt(subjectsCount[0].count) === 0) {
+      await connection.query(`
+        INSERT INTO subjects (name, class, progress) VALUES
+        ('Физика', 7, 14),
+        ('Математика', 7, 45),
+        ('Химия', 7, 28),
+        ('Биология', 7, 32),
+        ('Физика', 8, 22),
+        ('Алгебра', 8, 51),
+        ('Геометрия', 8, 38),
+        ('Информатика', 8, 67),
+        ('Физика', 9, 58),
+        ('Математика', 9, 72),
+        ('Химия', 9, 41),
+        ('Биология', 9, 36)
+      `);
+      console.log('✅ Test subjects added');
+    }
+    
+    console.log('✅ Database seeding complete');
+    
+  } catch (err) {
+    console.error('❌ SEEDING ERROR:', err.message);
   }
 }
 
@@ -209,9 +281,9 @@ console.log('='.repeat(60));
 if (frontendExists) {
   app.use(express.static(frontendPath, {
     maxAge: '1d',
-    setHeaders: (res, path) => {
-      if (path.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache');
+    setHeaders: (res, filePath) => {
+      if (path.extname(filePath) === '.html') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       }
     }
   }));
@@ -221,7 +293,7 @@ if (frontendExists) {
 // ========== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ==========
 initializeDatabase().then(() => {
   console.log('\n✅ DATABASE INITIALIZATION COMPLETE');
-  console.log('✅ SERVER READY TO USE EXISTING RAILWAY MYSQL DATABASE');
+  console.log('✅ SERVER READY TO USE RAILWAY MYSQL DATABASE');
 }).catch(err => {
   console.error('\n❌ DATABASE INIT FAILED:', err.message);
   console.error('❌ SERVER CANNOT START WITHOUT DATABASE CONNECTION');
@@ -240,14 +312,27 @@ app.get('/', (req, res) => {
     port: detectedPort,
     database: pool ? 'connected' : 'disconnected',
     documentation: {
-      subjects: 'GET /api/subjects/:class',
-      leaderboard: 'GET /api/leaderboard',
-      score: 'POST /api/score',
-      subject_progress: 'POST /api/subject-progress',
-      health: '/health',
-      db_info: '/api/db-info'
+      auth: {
+        login: 'POST /api/login',
+        register: 'POST /api/register',
+        user: 'GET /api/user'
+      },
+      data: {
+        subjects: 'GET /api/subjects/:class',
+        leaderboard: 'GET /api/leaderboard',
+        score: 'POST /api/score',
+        subject_progress: 'POST /api/subject-progress',
+        search: 'GET /api/search?q=...',
+        classes: 'GET /api/classes',
+        users_by_class: 'GET /api/users/class/:class',
+        top10: 'GET /api/top10'
+      },
+      system: {
+        health: '/health',
+        db_info: '/api/db-info'
+      }
     },
-    info: 'Using existing Railway MySQL database'
+    info: 'Using Railway MySQL database'
   });
 });
 
@@ -269,7 +354,6 @@ app.get('/health', async (req, res) => {
       health.database_status = 'healthy';
       health.status = 'healthy';
       
-      // Добавляем информацию о БД
       const [dbRows] = await pool.query('SELECT DATABASE() as db');
       health.database_name = dbRows[0].db;
     } else {
@@ -302,10 +386,8 @@ app.get('/api/db-info', async (req, res) => {
     const [versionRows] = await pool.query('SELECT VERSION() as version');
     const [dbRows] = await pool.query('SELECT DATABASE() as db');
     
-    // Получаем список таблиц
     const [tables] = await pool.query('SHOW TABLES');
     
-    // Получаем количество записей в каждой таблице
     const tableCounts = {};
     for (const table of tables) {
       const tableName = Object.values(table)[0];
@@ -338,9 +420,177 @@ app.get('/api/db-info', async (req, res) => {
   }
 });
 
-// ========== ОСНОВНЫЕ ЭНДПОИНТЫ (ИСПОЛЬЗУЮТ СУЩЕСТВУЮЩИЕ ТАБЛИЦЫ) ==========
+// ========== АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ==========
 
-// Получить предметы для класса (из существующей таблицы subjects)
+app.post('/api/login', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email и пароль обязательны' 
+      });
+    }
+    
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE email = ? AND password = ?', 
+      [email, password]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Неверный email или пароль' 
+      });
+    }
+    
+    const user = rows[0];
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.username,
+        class_number: user.class
+      },
+      token: 'demo-token-' + Date.now(),
+      message: 'Вход выполнен успешно'
+    });
+    
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+app.post('/api/register', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { email, password, fullName, classNumber } = req.body;
+    
+    if (!email || !password || !fullName || !classNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Все поля обязательны' 
+      });
+    }
+    
+    const [existing] = await pool.query(
+      'SELECT * FROM users WHERE email = ?', 
+      [email]
+    );
+    
+    if (existing.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Пользователь с таким email уже существует' 
+      });
+    }
+    
+    const username = email.split('@')[0];
+    
+    const [result] = await pool.query(
+      'INSERT INTO users (username, email, password, class) VALUES (?, ?, ?, ?)',
+      [username, email, password, classNumber]
+    );
+    
+    try {
+      await pool.query(
+        'INSERT INTO leaderboard (username, name, score) VALUES (?, ?, 0)',
+        [username, fullName]
+      );
+    } catch (err) {
+      console.log('User not added to leaderboard:', err.message);
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: result.insertId,
+        email: email,
+        name: fullName,
+        class_number: classNumber
+      },
+      token: 'demo-token-' + Date.now(),
+      message: 'Регистрация успешна'
+    });
+    
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/user', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      success: false, 
+      message: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Токен не предоставлен' 
+      });
+    }
+    
+    const [rows] = await pool.query('SELECT * FROM users LIMIT 1');
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Пользователь не найден' 
+      });
+    }
+    
+    const user = rows[0];
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.username,
+        class_number: user.class
+      }
+    });
+    
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+// ========== ОСНОВНЫЕ ЭНДПОИНТЫ ДАННЫХ ==========
+
 app.get('/api/subjects/:class', async (req, res) => {
   const classNum = parseInt(req.params.class);
   
@@ -353,41 +603,23 @@ app.get('/api/subjects/:class', async (req, res) => {
   }
   
   try {
-    // Пытаемся получить данные из существующей таблицы subjects
     const [rows] = await pool.query(
       'SELECT * FROM subjects WHERE class = ? ORDER BY name',
       [classNum]
     );
     
-    // Если таблица существует, возвращаем данные
-    res.json({
-      status: 'success',
-      count: rows.length,
-      data: rows,
-      timestamp: new Date().toISOString()
-    });
+    res.json(rows);
     
   } catch (err) {
-    // Если таблицы не существует, возвращаем ошибку
-    if (err.code === 'ER_NO_SUCH_TABLE') {
-      res.status(404).json({
-        status: 'error',
-        message: 'Subjects table not found in database',
-        suggestion: 'Create subjects table in Railway MySQL',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      res.status(500).json({
-        status: 'error',
-        message: 'Database query failed',
-        error: err.message,
-        timestamp: new Date().toISOString()
-      });
-    }
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-// Лидерборд (из существующей таблицы leaderboard)
 app.get('/api/leaderboard', async (req, res) => {
   if (!pool) {
     return res.status(503).json({
@@ -398,38 +630,22 @@ app.get('/api/leaderboard', async (req, res) => {
   }
   
   try {
-    // Пытаемся получить данные из существующей таблицы leaderboard
     const [rows] = await pool.query(
       'SELECT * FROM leaderboard ORDER BY score DESC LIMIT 20'
     );
     
-    res.json({
-      status: 'success',
-      count: rows.length,
-      data: rows,
-      timestamp: new Date().toISOString()
-    });
+    res.json(rows);
     
   } catch (err) {
-    if (err.code === 'ER_NO_SUCH_TABLE') {
-      res.status(404).json({
-        status: 'error',
-        message: 'Leaderboard table not found in database',
-        suggestion: 'Create leaderboard table in Railway MySQL',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      res.status(500).json({
-        status: 'error',
-        message: 'Database query failed',
-        error: err.message,
-        timestamp: new Date().toISOString()
-      });
-    }
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-// Добавить/обновить результат (в существующую таблицу leaderboard)
 app.post('/api/score', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ 
@@ -453,13 +669,6 @@ app.post('/api/score', async (req, res) => {
     try {
       await connection.beginTransaction();
       
-      // Проверяем существование таблицы
-      const [tables] = await connection.query('SHOW TABLES LIKE "leaderboard"');
-      if (tables.length === 0) {
-        throw new Error('leaderboard table does not exist');
-      }
-      
-      // Вставляем или обновляем запись
       await connection.query(`
         INSERT INTO leaderboard (username, name, score) 
         VALUES (?, ?, ?)
@@ -469,7 +678,6 @@ app.post('/api/score', async (req, res) => {
           updated_at = CURRENT_TIMESTAMP
       `, [username, name, score]);
       
-      // Обновляем ранги
       await connection.query(`
         SET @rank_num = 0;
         UPDATE leaderboard 
@@ -479,7 +687,6 @@ app.post('/api/score', async (req, res) => {
       
       await connection.commit();
       
-      // Получаем обновленные данные
       const [result] = await connection.query(
         'SELECT * FROM leaderboard WHERE username = ?',
         [username]
@@ -491,7 +698,7 @@ app.post('/api/score', async (req, res) => {
         score: score,
         username: username,
         name: name,
-        message: 'Score updated in Railway MySQL'
+        message: 'Score updated successfully'
       });
       
     } catch (err) {
@@ -502,22 +709,13 @@ app.post('/api/score', async (req, res) => {
     }
     
   } catch (err) {
-    if (err.message.includes('does not exist')) {
-      res.status(404).json({ 
-        success: false, 
-        message: 'Leaderboard table not found in Railway MySQL',
-        suggestion: 'Create the table first using MySQL Workbench'
-      });
-    } else {
-      res.status(500).json({ 
-        success: false, 
-        error: err.message 
-      });
-    }
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
   }
 });
 
-// Обновить прогресс предмета (в существующую таблицу subjects)
 app.post('/api/subject-progress', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ 
@@ -536,16 +734,6 @@ app.post('/api/subject-progress', async (req, res) => {
       });
     }
     
-    // Проверяем существование таблицы
-    const [tables] = await pool.query('SHOW TABLES LIKE "subjects"');
-    if (tables.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Subjects table not found in Railway MySQL',
-        suggestion: 'Create subjects table first'
-      });
-    }
-    
     await pool.query(`
       INSERT INTO subjects (name, class, progress) 
       VALUES (?, ?, ?)
@@ -556,7 +744,7 @@ app.post('/api/subject-progress', async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: 'Progress updated in Railway MySQL',
+      message: 'Progress updated successfully',
       data: { name, class: classNum, progress }
     });
     
@@ -568,7 +756,6 @@ app.post('/api/subject-progress', async (req, res) => {
   }
 });
 
-// Топ-10 игроков
 app.get('/api/top10', async (req, res) => {
   if (!pool) {
     return res.status(503).json({ 
@@ -580,10 +767,102 @@ app.get('/api/top10', async (req, res) => {
     const [rows] = await pool.query(
       'SELECT * FROM leaderboard ORDER BY score DESC LIMIT 10'
     );
-    res.json({
-      status: 'success',
-      data: rows
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
     });
+  }
+});
+
+app.get('/api/search', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+    
+    const [leaderboardResults] = await pool.query(
+      'SELECT * FROM leaderboard WHERE name LIKE ? OR username LIKE ? LIMIT 5',
+      [`%${q}%`, `%${q}%`]
+    );
+    
+    const [subjectsResults] = await pool.query(
+      'SELECT * FROM subjects WHERE name LIKE ? LIMIT 5',
+      [`%${q}%`]
+    );
+    
+    const results = [
+      ...leaderboardResults.map(item => ({
+        title: `${item.name} (${item.score} баллов)`,
+        description: `Лидерборд - ${item.rank || 'Не оценен'}`,
+        type: 'Ученик',
+        icon: 'fas fa-user-graduate',
+        data: item
+      })),
+      ...subjectsResults.map(item => ({
+        title: `${item.name} - ${item.class} класс`,
+        description: `${item.progress || 0}% завершено`,
+        type: 'Предмет',
+        icon: 'fas fa-book',
+        data: item
+      }))
+    ];
+    
+    res.json(results);
+    
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/classes', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const [rows] = await pool.query(
+      'SELECT DISTINCT class FROM subjects ORDER BY class'
+    );
+    
+    res.json(rows.map(row => row.class));
+    
+  } catch (err) {
+    res.status(500).json({ 
+      error: err.message 
+    });
+  }
+});
+
+app.get('/api/users/class/:class', async (req, res) => {
+  if (!pool) {
+    return res.status(503).json({ 
+      error: 'Database connection not available' 
+    });
+  }
+  
+  try {
+    const classNum = parseInt(req.params.class);
+    
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE class = ?',
+      [classNum]
+    );
+    
+    res.json(rows);
+    
   } catch (err) {
     res.status(500).json({ 
       error: err.message 
@@ -659,6 +938,8 @@ const server = app.listen(detectedPort, '0.0.0.0', () => {
   console.log(`    Subjects:     https://scool-production.up.railway.app/api/subjects/7`);
   console.log(`    Leaderboard:  https://scool-production.up.railway.app/api/leaderboard`);
   console.log(`    Frontend:     https://scool-production.up.railway.app/app`);
+  console.log(`    Login:        POST https://scool-production.up.railway.app/api/login`);
+  console.log(`    Register:     POST https://scool-production.up.railway.app/api/register`);
   
   if (pool) {
     console.log(`\n💾 DATABASE:       ✅ CONNECTED TO RAILWAY MYSQL`);
@@ -676,7 +957,7 @@ const server = app.listen(detectedPort, '0.0.0.0', () => {
   }
   
   console.log('\n' + '='.repeat(60));
-  console.log('🚀 USING EXISTING RAILWAY MYSQL DATABASE');
+  console.log('🚀 USING RAILWAY MYSQL DATABASE');
   console.log(` Environment: ${process.env.NODE_ENV || 'production'}`);
   console.log(` Port: ${detectedPort}`);
   console.log(` Database: ${pool ? '✅ Railway MySQL' : '❌ No database'}`);
