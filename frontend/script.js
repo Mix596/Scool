@@ -1,25 +1,20 @@
 // ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
-// Автоматически определяем URL для продакшена и разработки
 const getApiBaseUrl = () => {
-    // Используем относительные пути для Railway
     if (window.location.hostname.includes('railway') || 
         window.location.hostname.includes('vercel') ||
         window.location.hostname.includes('netlify')) {
         return window.location.origin;
     }
     
-    // Если локальная разработка
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         return 'http://localhost:3000';
     }
     
-    // По умолчанию текущий origin
     return window.location.origin;
 };
 
 const API_BASE_URL = getApiBaseUrl();
 console.log('🌐 API Base URL:', API_BASE_URL);
-console.log('🌐 Current Origin:', window.location.origin);
 
 const CONFIG = {
     API_BASE_URL: API_BASE_URL,
@@ -27,14 +22,14 @@ const CONFIG = {
         SEARCH: [
             {
                 title: "Физика - 7 класс",
-                description: "14% завершено",
+                description: "Изучение основ физики",
                 type: "Предмет",
                 icon: "fas fa-atom",
                 keywords: "физика наука 7 класс механика движение"
             },
             {
                 title: "Таблица лидеров",
-                description: "Елена Васильева (1200), Василий Петров (1000), Евгений Сидоров (900)",
+                description: "Топ учеников по баллам",
                 type: "Рейтинг",
                 icon: "fas fa-chart-line",
                 keywords: "лидеры турнир рейтинг таблица баллы"
@@ -47,30 +42,12 @@ const CONFIG = {
                 keywords: "написать нам поддержка помощь обратная связь"
             }
         ],
-        SUBJECTS_BY_CLASS: {
-            7: [
-                { name: 'Физика', progress_percent: 14, color: '#3f51b5' },
-                { name: 'Математика', progress_percent: 45, color: '#f44336' },
-                { name: 'Химия', progress_percent: 28, color: '#4caf50' },
-                { name: 'Биология', progress_percent: 32, color: '#ff9800' }
-            ],
-            8: [
-                { name: 'Физика', progress_percent: 22, color: '#3f51b5' },
-                { name: 'Алгебра', progress_percent: 51, color: '#f44336' },
-                { name: 'Геометрия', progress_percent: 38, color: '#4caf50' },
-                { name: 'Информатика', progress_percent: 67, color: '#ff9800' }
-            ],
-            9: [
-                { name: 'Физика', progress_percent: 58, color: '#3f51b5' },
-                { name: 'Математика', progress_percent: 72, color: '#f44336' },
-                { name: 'Химия', progress_percent: 41, color: '#4caf50' },
-                { name: 'Биология', progress_percent: 36, color: '#ff9800' }
-            ]
-        },
         LEADERBOARD: [
-            { name: 'Елена Васильева', score: 1200, class: 9 },
-            { name: 'Василий Петров', score: 1000, class: 8 },
-            { name: 'Евгений Сидоров', score: 900, class: 7 }
+            { name: 'Елена Васильева', score: 1200, class: 9, rank: 1 },
+            { name: 'Василий Петров', score: 1000, class: 8, rank: 2 },
+            { name: 'Евгений Сидоров', score: 900, class: 7, rank: 3 },
+            { name: 'Мария Козлова', score: 850, class: 9, rank: 4 },
+            { name: 'Алексей Тихонов', score: 800, class: 8, rank: 5 }
         ]
     }
 };
@@ -103,7 +80,6 @@ async function apiRequest(endpoint, options = {}) {
     } catch (error) {
         console.error(`❌ API Error (${endpoint}):`, error.message);
         
-        // Если ошибка сети, показываем сообщение
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
             showCenterMessage('Ошибка подключения к серверу', 'fa-wifi');
         }
@@ -114,7 +90,6 @@ async function apiRequest(endpoint, options = {}) {
 
 async function loadServerData() {
     try {
-        // Пробуем получить лидерборд
         try {
             const leaderboard = await apiRequest('/api/leaderboard');
             if (leaderboard && Array.isArray(leaderboard)) {
@@ -126,7 +101,6 @@ async function loadServerData() {
             updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
         }
         
-        // Пробуем получить предметы если пользователь авторизован
         if (currentUser && currentUser.class_number) {
             try {
                 const subjects = await apiRequest(`/api/subjects/${currentUser.class_number}`);
@@ -159,16 +133,9 @@ function updateSubjectsFromServer(subjectsData) {
                         titleElement.textContent = subjectsData[index].name || 'Физика';
                     }
                     
-                    const progressFill = card.querySelector('.progress-fill');
-                    const progressText = card.querySelector('.progress-text');
-                    
-                    const progress = subjectsData[index].progress || subjectsData[index].progress_percent || 0;
-                    
-                    if (progressFill) {
-                        progressFill.style.width = `${progress}%`;
-                    }
-                    if (progressText) {
-                        progressText.textContent = `${progress}% завершено`;
+                    const classElement = card.querySelector('p');
+                    if (classElement) {
+                        classElement.textContent = `${subjectsData[index].class_number || 7} класс`;
                     }
                 }
             });
@@ -179,15 +146,13 @@ function updateSubjectsFromServer(subjectsData) {
 // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
 
 async function initApp() {
-    console.log('🚀 Инициализация SCool для Railway...');
-    console.log('📍 Location:', window.location.href);
+    console.log('🚀 Инициализация SCool...');
     
     try {
         checkUserSession();
         setupEventListeners();
         initializeAllLayouts();
         
-        // Загружаем данные с сервера
         await loadServerData();
         
         console.log('✅ Приложение успешно инициализировано');
@@ -216,7 +181,7 @@ function updateUserInterface() {
     const profileBtn = document.getElementById('profile-btn');
     if (profileBtn && currentUser) {
         profileBtn.title = currentUser.name || 'Профиль';
-        profileBtn.style.color = '#4CAF50'; // Зеленый цвет для авторизованного пользователя
+        profileBtn.style.color = '#4CAF50';
     }
 }
 
@@ -250,25 +215,17 @@ function initializePhysicsSubjects(layout, layoutId) {
             classNumber = currentUser ? currentUser.class_number : 7;
     }
     
-    const subjects = CONFIG.FALLBACK_DATA.SUBJECTS_BY_CLASS[classNumber] || CONFIG.FALLBACK_DATA.SUBJECTS_BY_CLASS[7];
     const subjectCards = layout.querySelectorAll('.subject-card');
     
     subjectCards.forEach((card, index) => {
-        if (subjects[index]) {
-            const titleElement = card.querySelector('h3');
-            if (titleElement) {
-                titleElement.textContent = subjects[index].name;
-            }
-            
-            const progressFill = card.querySelector('.progress-fill');
-            const progressText = card.querySelector('.progress-text');
-            
-            if (progressFill) {
-                progressFill.style.width = `${subjects[index].progress_percent}%`;
-            }
-            if (progressText) {
-                progressText.textContent = `${subjects[index].progress_percent}% завершено`;
-            }
+        const titleElement = card.querySelector('h3');
+        if (titleElement) {
+            titleElement.textContent = 'Физика';
+        }
+        
+        const classElement = card.querySelector('p');
+        if (classElement) {
+            classElement.textContent = `${classNumber} класс`;
         }
     });
 }
@@ -283,7 +240,6 @@ function updateAllLeaderboards(leaderboardData) {
         const li = document.createElement('li');
         li.className = 'leader-item';
         
-        // Создаем аватар с первой буквой имени
         const firstLetter = (item.name || 'У').charAt(0).toUpperCase();
         const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
         const color = colors[index % colors.length];
@@ -527,6 +483,170 @@ function validateEmail(email) {
     return re.test(email);
 }
 
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+
+function showProfileMenu() {
+    const menu = document.createElement('div');
+    menu.className = 'profile-menu';
+    menu.style.cssText = `
+        position: absolute;
+        top: 60px;
+        right: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 15px;
+        min-width: 200px;
+        z-index: 1000;
+    `;
+    
+    menu.innerHTML = `
+        <div style="padding: 10px; border-bottom: 1px solid #eee;">
+            <strong>${currentUser.name}</strong>
+            <div style="color: #666; font-size: 0.9em;">${currentUser.email}</div>
+            <div style="color: #888; font-size: 0.8em;">Класс: ${currentUser.class_number}</div>
+        </div>
+        <button id="logout-btn" style="width: 100%; padding: 10px; margin-top: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            <i class="fas fa-sign-out-alt"></i> Выйти
+        </button>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    document.getElementById('logout-btn').addEventListener('click', function() {
+        logoutUser();
+        menu.remove();
+    });
+    
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target) && e.target.id !== 'profile-btn') {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+}
+
+function showEmailMessage(email) {
+    showCenterMessage(`Напишите нам на: ${email}`, 'fa-envelope');
+}
+
+function showCenterMessage(message, icon = 'fa-info-circle') {
+    const messageElement = document.getElementById('center-message');
+    const messageText = document.getElementById('center-message-text');
+    const messageIcon = document.getElementById('center-message-icon');
+    
+    if (messageElement && messageText && messageIcon) {
+        messageText.textContent = message;
+        messageIcon.className = `fas ${icon}`;
+        messageElement.classList.add('show');
+        
+        setTimeout(() => {
+            messageElement.classList.remove('show');
+        }, 3000);
+    }
+}
+
+function hideCenterMessage() {
+    const messageElement = document.getElementById('center-message');
+    if (messageElement) {
+        messageElement.classList.remove('show');
+    }
+}
+
+function switchLayout(classNumber) {
+    hideAllLayouts();
+    
+    const layoutId = getLayoutIdByClass(classNumber);
+    const layout = document.getElementById(layoutId);
+    
+    if (layout) {
+        layout.style.display = 'flex';
+        layout.classList.add('active');
+    }
+    
+    updateActiveClassButton(classNumber);
+}
+
+function getLayoutIdByClass(classNumber) {
+    switch(classNumber) {
+        case '7': return 'desktop9-layout';
+        case '8': return 'desktop10-layout';
+        case '9': return 'desktop11-layout';
+        default: return 'standard-layout';
+    }
+}
+
+function hideAllLayouts() {
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            layout.style.display = 'none';
+            layout.classList.remove('active');
+        }
+    });
+}
+
+function updateActiveClassButton(selectedClass) {
+    document.querySelectorAll('.class-btn').forEach(button => {
+        if (button.getAttribute('data-class') === selectedClass) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+}
+
+function getActiveLayout() {
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    for (const layoutId of layouts) {
+        const layout = document.getElementById(layoutId);
+        if (layout && layout.style.display !== 'none') {
+            return layout;
+        }
+    }
+    return null;
+}
+
+function goToHome() {
+    hideAllLayouts();
+    document.getElementById('standard-layout').style.display = 'flex';
+    document.getElementById('standard-layout').classList.add('active');
+    
+    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('.class-btn[data-class="7"]')?.classList.add('active');
+}
+
+function highlightText(text, searchTerm) {
+    if (!searchTerm || searchTerm.length < 2) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+function updateThemeLabels(isDark) {
+    const lightLabel = document.querySelector('.theme-label.light');
+    const darkLabel = document.querySelector('.theme-label.dark');
+    
+    if (lightLabel && darkLabel) {
+        if (isDark) {
+            lightLabel.style.color = '#aaa';
+            lightLabel.style.fontWeight = 'normal';
+            darkLabel.style.color = '#87CEEB';
+            darkLabel.style.fontWeight = '500';
+        } else {
+            lightLabel.style.color = '#3f51b5';
+            lightLabel.style.fontWeight = '500';
+            darkLabel.style.color = '#666';
+            darkLabel.style.fontWeight = 'normal';
+        }
+    }
+}
+
 // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
 
 function setupEventListeners() {
@@ -682,16 +802,9 @@ async function loadSubjectsForClass(classNumber) {
                             titleElement.textContent = subjects[index].name || 'Физика';
                         }
                         
-                        const progressFill = card.querySelector('.progress-fill');
-                        const progressText = card.querySelector('.progress-text');
-                        
-                        const progress = subjects[index].progress || 0;
-                        
-                        if (progressFill) {
-                            progressFill.style.width = `${progress}%`;
-                        }
-                        if (progressText) {
-                            progressText.textContent = `${progress}% завершено`;
+                        const classElement = card.querySelector('p');
+                        if (classElement) {
+                            classElement.textContent = `${classNumber} класс`;
                         }
                     }
                 });
@@ -707,7 +820,6 @@ async function performSearch(searchTerm) {
         const results = await apiRequest(`/api/search?q=${encodeURIComponent(searchTerm)}`);
         displaySearchResults(results, searchTerm);
     } catch (error) {
-        // Используем локальные данные если API недоступен
         const localResults = CONFIG.FALLBACK_DATA.SEARCH.filter(item => 
             item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
             item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
@@ -770,9 +882,6 @@ function displaySearchResults(results, searchTerm) {
     
     searchResults.classList.add('show');
 }
-
-// Остальные функции (showProfileMenu, showEmailMessage, etc.) остаются такими же
-// ... включая все вспомогательные функции из предыдущего кода
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
