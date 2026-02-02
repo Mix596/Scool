@@ -5,36 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCool - Личный кабинет</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
 </head>
 <body>
     <header class="header">
         <div class="logo">
             <i class="fas fa-graduation-cap"></i> SCool
+            <span class="version">v1.0</span>
         </div>
         <div class="search-bar">
             <i class="fas fa-search"></i>
             <input type="text" placeholder="Что ты хочешь выучить сегодня?" id="search-input">
-            <div class="search-results" id="search-results">
-                <!-- Результаты поиска будут добавляться сюда -->
-            </div>
+            <div class="search-results" id="search-results"></div>
         </div>
         <div class="header-icons">
-            <!-- Контейнер для переключателя темы с надписями -->
             <div class="theme-container">
                 <span class="theme-label light">Светлая</span>
-                
-                <!-- Переключатель темы -->
                 <label class="theme-switch">
                     <input type="checkbox" id="theme-toggle">
                     <span class="theme-slider"></span>
                     <i class="fas fa-moon theme-icon moon"></i>
                     <i class="fas fa-sun theme-icon sun"></i>
                 </label>
-                
                 <span class="theme-label dark">Тёмная</span>
             </div>
-            
             <i class="fas fa-bell" id="notification-btn"></i>
             <i class="fas fa-user-circle" id="profile-btn"></i>
         </div>
@@ -48,79 +43,71 @@
                 <button class="class-btn" data-class="9">9 класс</button>
             </div>
 
-            <!-- Макет Desktop - 9 - для 7 класса -->
             <div id="desktop9-layout" class="desktop9-section">
                 <div class="desktop-header">
                     <button class="desktop-home-link" id="home-from-desktop9">
                         <i class="fas fa-home"></i> На главную
                     </button>
                 </div>
-                
-                <!-- Карточка физики БЕЗ прогресса -->
-                <div class="subject-card" data-search="Физика наука">
+                <div class="subject-card">
                     <h3>Физика</h3>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: 14%;"></div>
+                    </div>
+                    <p class="progress-text">14% завершено</p>
                 </div>
-
                 <div class="desktop-contact-us">
-                    <button class="desktop-contact-btn mail-button" type="button"
-                            data-email="SCool@yandex.ru"
-                            title="Написать на SCool@yandex.ru">
+                    <button class="desktop-contact-btn mail-button" data-email="scool@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
                     </button>
                 </div>
             </div>
 
-            <!-- Макет Desktop - 10 - для 8 класса -->
             <div id="desktop10-layout" class="desktop10-section">
                 <div class="desktop-header">
                     <button class="desktop-home-link" id="home-from-desktop10">
                         <i class="fas fa-home"></i> На главную
                     </button>
                 </div>
-                
-                <!-- Карточка физики БЕЗ прогресса -->
-                <div class="subject-card" data-search="Физика наука">
+                <div class="subject-card">
                     <h3>Физика</h3>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: 22%;"></div>
+                    </div>
+                    <p class="progress-text">22% завершено</p>
                 </div>
-
                 <div class="desktop-contact-us">
-                    <button class="desktop-contact-btn mail-button" type="button"
-                            data-email="SCool@yandex.ru"
-                            title="Написать на SCool@yandex.ru">
+                    <button class="desktop-contact-btn mail-button" data-email="scool@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
                     </button>
                 </div>
             </div>
 
-            <!-- Макет Desktop - 11 - для 9 класса -->
             <div id="desktop11-layout" class="desktop11-section">
                 <div class="desktop-header">
                     <button class="desktop-home-link" id="home-from-desktop11">
                         <i class="fas fa-home"></i> На главную
                     </button>
                 </div>
-                
-                <!-- Карточка физики БЕЗ прогресса -->
-                <div class="subject-card" data-search="Физика наука 9 класс">
+                <div class="subject-card">
                     <h3>Физика</h3>
+                    <div class="progress-container">
+                        <div class="progress-fill" style="width: 58%;"></div>
+                    </div>
+                    <p class="progress-text">58% завершено</p>
                 </div>
-
                 <div class="desktop-contact-us">
-                    <button class="desktop-contact-btn mail-button" type="button"
-                            data-email="SCool@yandex.ru"
-                            title="Написать на Scool@yandex.ru">
+                    <button class="desktop-contact-btn mail-button" data-email="scool@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
                     </button>
                 </div>
             </div>
 
-            <!-- Стандартный макет (по умолчанию) -->
             <div id="standard-layout" class="standard-section">
-                <!-- Продолжить обучение - ТОЛЬКО в стандартном макете -->
-                <section class="section-block" data-search="Продолжить обучение физика">
+                <section class="section-block">
                     <h2>Продолжить тест</h2>
                     <div class="learning-cards">
-                        <div class="card learning-card" data-search="Физика 7 класс МКТ молекулярно кинетическая теория">
+                        <div class="card learning-card">
                             <div class="card-header">
                                 <h3>Физика</h3>
                                 <span>7 класс</span>
@@ -134,11 +121,10 @@
                     </div>
                 </section>
 
-                <!-- Достижения пользователя - ТОЛЬКО в стандартном макете -->
-                <section class="section-block" data-search="Достижения успехи турнир результаты">
+                <section class="section-block">
                     <h2 class="section-title-with-date">Достижения пользователя <span class="date">Дата</span></h2>
                     <div class="achievements-list">
-                        <div class="achievement-item" data-search="Осенний турнир физика">
+                        <div class="achievement-item">
                             <div class="achievement-info">
                                 <h3>Осенний турнир</h3>
                                 <span class="date-value">09.11.2025</span>
@@ -154,11 +140,8 @@
                     </div>
                 </section>
 
-                <!-- Кнопка "Написать нам" в стандартном макете -->
-                <div class="standard-contact-us" data-search="Написать нам поддержка помощь обратная связь">
-                    <button class="standard-contact-btn mail-button" type="button"
-                            data-email="Scool@yandex.ru"
-                            title="Написать на Scool@yandex.ru">
+                <div class="standard-contact-us">
+                    <button class="standard-contact-btn mail-button" data-email="scool@yandex.ru">
                         <i class="fas fa-envelope"></i> Написать нам
                     </button>
                 </div>
@@ -166,59 +149,37 @@
         </div>
 
         <aside class="right-sidebar">
-            <div class="card leaderboard" data-search="Лидеры турнир рейтинг таблица баллы">
+            <div class="card leaderboard">
                 <h3>Лидеры турнира</h3>
-                <ul class="leader-list">
-                    <li class="leader-item" data-search="Елена В. лидер первый место 1200">
-                        <span class="rank">1</span>
-                        <div class="avatar" style="background-image: url('https://via.placeholder.com/30/ff5722/ffffff?text=E');"></div>
-                        <span class="name">Елена В.</span>
-                        <span class="score">1200</span>
-                    </li>
-                    <li class="leader-item" data-search="Вася второе место 1000">
-                        <span class="rank">2</span>
-                        <div class="avatar" style="background-image: url('https://via.placeholder.com/30/4caf50/ffffff?text=B');"></div>
-                        <span class="name">Вася</span>
-                        <span class="score">1000</span>
-                    </li>
-                    <li class="leader-item" data-search="Евгений третье место 900">
-                        <span class="rank">3</span>
-                        <div class="avatar" style="background-image: url('https://via.placeholder.com/30/2196f3/ffffff?text=E');"></div>
-                        <span class="name">Евгений</span>
-                        <span class="score">900</span>
-                    </li>
+                <ul class="leader-list" id="leaderboard-list">
+                    <!-- Заполнится через JavaScript -->
                 </ul>
-                <button class="btn btn-full" id="full-table-btn" type="button">Вся таблица</button>
+                <button class="btn btn-full" id="full-table-btn">Вся таблица</button>
             </div>
-
-            <div class="card advertisement" data-search="Реклама объявление">
+            <div class="card advertisement">
                 <h3>Реклама</h3>
+                <p>Здесь может быть ваша реклама</p>
             </div>
         </aside>
     </main>
 
-    <!-- Центральная плашка для уведомлений -->
     <div class="center-message" id="center-message">
         <div class="center-message-content">
             <i class="fas center-message-icon" id="center-message-icon"></i>
             <div class="center-message-text" id="center-message-text"></div>
-            <button class="center-message-close" id="close-center-message" type="button">
+            <button class="center-message-close" id="close-center-message">
                 <i class="fas fa-times"></i>
             </button>
         </div>
     </div>
 
-    <!-- Модальное окно авторизации -->
     <div id="auth-modal" class="auth-modal">
         <div class="auth-modal-content">
             <span class="auth-close">&times;</span>
-            
             <div class="auth-tabs">
                 <button class="auth-tab-btn active" data-tab="login">Вход</button>
                 <button class="auth-tab-btn" data-tab="register">Регистрация</button>
             </div>
-            
-            <!-- Форма входа -->
             <form id="login-form" class="auth-form active">
                 <div class="auth-input-group">
                     <i class="fas fa-envelope"></i>
@@ -237,8 +198,6 @@
                 </div>
                 <button type="submit" class="auth-submit-btn">Войти</button>
             </form>
-            
-            <!-- Форма регистрации -->
             <form id="register-form" class="auth-form">
                 <div class="auth-input-group">
                     <i class="fas fa-user"></i>
@@ -270,6 +229,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="/script.js"></script>
 </body>
 </html>
