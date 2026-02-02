@@ -277,8 +277,11 @@ if (frontendExists) {
 }
 console.log('='.repeat(60));
 
-// ========== СТАТИЧЕСКИЕ ФАЙЛЫ ==========
+// ========== СТАТИЧЕСКИЕ ФАЙЛЫ И ФРОНТЕНД РОУТЫ ==========
 if (frontendExists) {
+  console.log('\n🌐 CONFIGURING FRONTEND ROUTES...');
+  
+  // Статические файлы из фронтенда
   app.use(express.static(frontendPath, {
     maxAge: '1d',
     setHeaders: (res, filePath) => {
@@ -288,6 +291,45 @@ if (frontendExists) {
     }
   }));
   console.log('✅ Static files configured');
+  
+  // Фронтенд маршруты
+  app.get('/', (req, res) => {
+    console.log(`📄 Serving index.html for route: ${req.path}`);
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+  
+  app.get('/app', (req, res) => {
+    console.log(`📄 Redirecting /app to /`);
+    res.redirect('/');
+  });
+  
+  app.get('/app/*', (req, res) => {
+    const newPath = req.path.replace('/app', '');
+    console.log(`📄 Redirecting ${req.path} to ${newPath}`);
+    res.redirect(newPath);
+  });
+  
+  // SPA маршрутизация - все не-API пути показывают фронтенд
+  app.get('*', (req, res, next) => {
+    // Пропускаем API маршруты
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    // Пропускаем уже обработанные маршруты
+    if (req.path === '/' || req.path === '/health') {
+      return next();
+    }
+    // Пропускаем статические файлы (если они существуют)
+    const fullPath = path.join(frontendPath, req.path);
+    if (fs.existsSync(fullPath) && !fs.lstatSync(fullPath).isDirectory()) {
+      return next();
+    }
+    // Все остальные маршруты показывают SPA
+    console.log(`🔄 SPA route: ${req.path} -> index.html`);
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+  
+  console.log('✅ Frontend routes configured');
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ==========
@@ -297,46 +339,11 @@ initializeDatabase().then(() => {
 }).catch(err => {
   console.error('\n❌ DATABASE INIT FAILED:', err.message);
   console.error('❌ SERVER CANNOT START WITHOUT DATABASE CONNECTION');
-  process.exit(1);
 });
 
 // ========== API ENDPOINTS ==========
 
-// Главная страница API
-app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'SCool API - Production',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-    port: detectedPort,
-    database: pool ? 'connected' : 'disconnected',
-    documentation: {
-      auth: {
-        login: 'POST /api/login',
-        register: 'POST /api/register',
-        user: 'GET /api/user'
-      },
-      data: {
-        subjects: 'GET /api/subjects/:class',
-        leaderboard: 'GET /api/leaderboard',
-        score: 'POST /api/score',
-        subject_progress: 'POST /api/subject-progress',
-        search: 'GET /api/search?q=...',
-        classes: 'GET /api/classes',
-        users_by_class: 'GET /api/users/class/:class',
-        top10: 'GET /api/top10'
-      },
-      system: {
-        health: '/health',
-        db_info: '/api/db-info'
-      }
-    },
-    info: 'Using Railway MySQL database'
-  });
-});
-
-// Проверка здоровья
+// Проверка здоровья (Railway healthcheck)
 app.get('/health', async (req, res) => {
   const health = {
     status: 'checking',
@@ -370,6 +377,41 @@ app.get('/health', async (req, res) => {
     health.status = 'unhealthy';
     res.status(200).json(health);
   }
+});
+
+// Главная страница API
+app.get('/api', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'SCool API - Production',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    port: detectedPort,
+    database: pool ? 'connected' : 'disconnected',
+    frontend: frontendExists ? 'available' : 'not_found',
+    documentation: {
+      auth: {
+        login: 'POST /api/login',
+        register: 'POST /api/register',
+        user: 'GET /api/user'
+      },
+      data: {
+        subjects: 'GET /api/subjects/:class',
+        leaderboard: 'GET /api/leaderboard',
+        score: 'POST /api/score',
+        subject_progress: 'POST /api/subject-progress',
+        search: 'GET /api/search?q=...',
+        classes: 'GET /api/classes',
+        users_by_class: 'GET /api/users/class/:class',
+        top10: 'GET /api/top10'
+      },
+      system: {
+        health: '/health',
+        db_info: '/api/db-info'
+      }
+    },
+    info: 'Using Railway MySQL database'
+  });
 });
 
 // Информация о базе данных
@@ -870,22 +912,6 @@ app.get('/api/users/class/:class', async (req, res) => {
   }
 });
 
-// ========== ФРОНТЕНД РОУТЫ ==========
-if (frontendExists) {
-  app.get('/app', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
-  
-  app.get('/app/*', (req, res) => {
-    const filePath = path.join(frontendPath, req.path.replace('/app', ''));
-    if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isDirectory()) {
-      res.sendFile(filePath);
-    } else {
-      res.sendFile(path.join(frontendPath, 'index.html'));
-    }
-  });
-}
-
 // ========== ОБРАБОТКА ОШИБОК ==========
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
@@ -894,25 +920,6 @@ app.use('/api/*', (req, res) => {
     method: req.method,
     port: detectedPort
   });
-});
-
-app.use((req, res) => {
-  if (frontendExists && !req.path.startsWith('/api/')) {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  } else {
-    res.status(404).json({ 
-      error: 'Not found',
-      port: detectedPort,
-      available_endpoints: [
-        '/',
-        '/health',
-        '/api/db-info',
-        '/api/subjects/:class',
-        '/api/leaderboard',
-        '/api/top10'
-      ]
-    });
-  }
 });
 
 app.use((err, req, res, next) => {
@@ -931,19 +938,17 @@ const server = app.listen(detectedPort, '0.0.0.0', () => {
   console.log(` Internal URL: http://0.0.0.0:${detectedPort}`);
   console.log(` Local URL:    http://localhost:${detectedPort}`);
   console.log('='.repeat(60));
-  console.log('\n📡 PUBLIC ENDPOINTS:');
-  console.log(`    Main API:     https://scool-production.up.railway.app/`);
-  console.log(`    Health:       https://scool-production.up.railway.app/health`);
-  console.log(`    DB Info:      https://scool-production.up.railway.app/api/db-info`);
-  console.log(`    Subjects:     https://scool-production.up.railway.app/api/subjects/7`);
-  console.log(`    Leaderboard:  https://scool-production.up.railway.app/api/leaderboard`);
-  console.log(`    Frontend:     https://scool-production.up.railway.app/app`);
-  console.log(`    Login:        POST https://scool-production.up.railway.app/api/login`);
-  console.log(`    Register:     POST https://scool-production.up.railway.app/api/register`);
+  
+  console.log('\n🌐 AVAILABLE ENDPOINTS:');
+  console.log(`   Main Website:    http://localhost:${detectedPort}/`);
+  console.log(`   Health Check:    http://localhost:${detectedPort}/health`);
+  console.log(`   API Documentation: http://localhost:${detectedPort}/api`);
+  console.log(`   Database Info:   http://localhost:${detectedPort}/api/db-info`);
+  console.log(`   Subjects (7th):  http://localhost:${detectedPort}/api/subjects/7`);
+  console.log(`   Leaderboard:     http://localhost:${detectedPort}/api/leaderboard`);
   
   if (pool) {
     console.log(`\n💾 DATABASE:       ✅ CONNECTED TO RAILWAY MYSQL`);
-    console.log(`   Service: mysql-volume-_51g`);
     console.log(`   Status: Online`);
   } else {
     console.log(`\n💾 DATABASE:       ❌ DISCONNECTED`);
@@ -951,7 +956,9 @@ const server = app.listen(detectedPort, '0.0.0.0', () => {
   
   if (frontendExists) {
     console.log(`\n🌐 FRONTEND:        ✅ DETECTED`);
-    console.log(`   App:         https://scool-production.up.railway.app/app`);
+    console.log(`   Main App:       http://localhost:${detectedPort}/`);
+    console.log(`   CSS:            http://localhost:${detectedPort}/style.css`);
+    console.log(`   JS:             http://localhost:${detectedPort}/script.js`);
   } else {
     console.log(`\n🌐 FRONTEND:        ❌ NOT FOUND`);
   }
@@ -961,6 +968,7 @@ const server = app.listen(detectedPort, '0.0.0.0', () => {
   console.log(` Environment: ${process.env.NODE_ENV || 'production'}`);
   console.log(` Port: ${detectedPort}`);
   console.log(` Database: ${pool ? '✅ Railway MySQL' : '❌ No database'}`);
+  console.log(` Frontend: ${frontendExists ? '✅ Found' : '❌ Missing'}`);
   console.log('='.repeat(60));
 });
 
