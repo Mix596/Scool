@@ -1,1341 +1,910 @@
-/* Общие стили */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-
-body {
-    background-color: #f0f2f5;
-    color: #333;
-    line-height: 1.6;
-    min-height: 100vh;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-/* Основной контент */
-.main-content {
-    display: flex;
-    gap: 20px;
-    padding: 20px;
-    max-width: 1200px;
-    margin: 20px auto;
-}
-
-.left-section {
-    flex: 3;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.right-sidebar {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.card, .section-block {
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 20px;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-h1, h2, h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #333;
-    transition: color 0.3s;
-}
-
-p {
-    margin-bottom: 10px;
-}
-
-/* Шапка */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 30px;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.3s, border-color 0.3s;
-}
-
-.logo {
-    font-weight: bold;
-    font-size: 1.5em;
-    color: #3f51b5;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.logo .fa-graduation-cap {
-    color: #87CEEB;
-    font-size: 1.2em;
-}
-
-.search-bar {
-    flex-grow: 1;
-    max-width: 500px;
-    margin: 0 20px;
-    background-color: #e0f2f7;
-    border-radius: 25px;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    transition: background-color 0.3s;
-    position: relative;
-}
-
-.search-bar input {
-    border: none;
-    background: transparent;
-    outline: none;
-    flex-grow: 1;
-    font-size: 1em;
-    color: #555;
-    transition: color 0.3s;
-}
-
-.search-bar input::placeholder {
-    color: #888;
-    transition: color 0.3s;
-}
-
-.search-bar .fa-search {
-    color: #888;
-    margin-right: 10px;
-    transition: color 0.3s;
-}
-
-/* Результаты поиска */
-.search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 0;
-    margin-top: 5px;
-    z-index: 100;
-    display: none;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #eee;
-}
-
-.search-results.show {
-    display: block;
-}
-
-.search-result-item {
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
-}
-
-.search-result-item:last-child {
-    border-bottom: none;
-}
-
-.search-result-item:hover {
-    background-color: #f5f7fa;
-}
-
-.search-result-item .result-icon {
-    margin-right: 10px;
-    color: #87CEEB;
-    width: 20px;
-    text-align: center;
-}
-
-.search-result-item .result-text {
-    flex-grow: 1;
-}
-
-.search-result-item .result-type {
-    font-size: 0.8em;
-    color: #888;
-    background-color: #f0f0f0;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: 10px;
-}
-
-.search-no-results {
-    padding: 20px;
-    text-align: center;
-    color: #888;
-    font-style: italic;
-}
-
-.header-icons {
-    display: flex;
-    gap: 15px;
-    font-size: 1.2em;
-    color: #666;
-    align-items: center;
-}
-
-.header-icons i {
-    cursor: pointer;
-}
-
-/* Контейнер для переключателя темы */
-.theme-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-right: 10px;
-}
-
-.theme-label {
-    font-size: 0.85em;
-    color: #666;
-    white-space: nowrap;
-    transition: color 0.3s;
-}
-
-.theme-label.light {
-    color: #3f51b5;
-    font-weight: 500;
-}
-
-.theme-label.dark {
-    color: #666;
-}
-
-/* Кнопка переключения темы */
-.theme-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-}
-
-.theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.theme-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #87CEEB;
-    transition: .4s;
-    border-radius: 24px;
-}
-
-.theme-slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-    z-index: 2;
-}
-
-input:checked + .theme-slider {
-    background-color: #333;
-}
-
-input:checked + .theme-slider:before {
-    transform: translateX(26px);
-}
-
-.theme-icon {
-    font-size: 14px;
-    position: absolute;
-    top: 5px;
-}
-
-.theme-icon.moon {
-    left: 6px;
-    color: white;
-    z-index: 1;
-}
-
-.theme-icon.sun {
-    right: 6px;
-    color: #FFD700;
-    z-index: 1;
-}
-
-/* Выбор класса */
-.class-selection {
-    display: flex;
-    background-color: #e0f2f7;
-    border-radius: 25px;
-    padding: 5px;
-    width: fit-content;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: background-color 0.3s;
-}
-
-.class-btn {
-    background-color: transparent;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 1em;
-    color: #555;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.class-btn.active {
-    background-color: #87CEEB;
-    color: #fff;
-    font-weight: bold;
-}
-
-/* Макет Desktop - 9 - для 7 класса */
-.desktop9-section {
-    display: none;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.desktop9-section.active {
-    display: flex;
-}
-
-/* Макет Desktop - 10 - для 8 класса */
-.desktop10-section {
-    display: none;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.desktop10-section.active {
-    display: flex;
-}
-
-/* Макет Desktop - 11 - для 9 класса */
-.desktop11-section {
-    display: none;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.desktop11-section.active {
-    display: flex;
-}
-
-/* Заголовки для Desktop макетов */
-.desktop-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.desktop-home-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: white;
-    text-decoration: none;
-    font-size: 1.1em;
-    font-weight: 500;
-    padding: 12px 20px;
-    background-color: #87CEEB;
-    border-radius: 25px;
-    transition: background-color 0.3s, transform 0.2s;
-    border: none;
-    cursor: pointer;
-}
-
-.desktop-home-link:hover {
-    background-color: #64b5f6;
-    transform: translateY(-2px);
-}
-
-.desktop-home-link i {
-    font-size: 1.1em;
-}
-
-/* Стили для карточек предметов - БЕЗ ПРОГРЕССА */
-.subject-card {
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    border-left: 4px solid #87CEEB;
-    text-align: center;
-}
-
-.subject-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.subject-card h3 {
-    margin: 0 0 10px 0;
-    font-size: 1.5em;
-    color: #333;
-}
-
-.subject-card p {
-    margin: 0;
-    color: #666;
-    font-size: 1.1em;
-}
-
-/* Кнопки "Написать нам" */
-.desktop-contact-us {
-    margin-top: 20px;
-    text-align: center;
-}
-
-.desktop-contact-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: #3f51b5;
-    text-decoration: none;
-    font-size: 1.1em;
-    font-weight: 500;
-    padding: 12px 25px;
-    background-color: #fff;
-    border-radius: 25px;
-    transition: all 0.3s;
-    border: 2px solid #87CEEB;
-    cursor: pointer;
-}
-
-.desktop-contact-btn:hover {
-    background-color: #87CEEB;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(135, 206, 235, 0.3);
-}
-
-.desktop-contact-btn i {
-    font-size: 1.1em;
-}
-
-/* Стандартный макет */
-.standard-section {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* Карточки обучения */
-.learning-cards {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.learning-card {
-    flex: 1;
-    min-width: 250px;
-    padding: 15px;
-}
-
-.learning-card .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.learning-card .card-header h3 {
-    margin: 0;
-    font-size: 1.1em;
-}
-
-.learning-card .card-header span {
-    background-color: #f0f0f0;
-    padding: 4px 8px;
-    border-radius: 8px;
-    font-size: 0.8em;
-    color: #777;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-/* Прогресс бар (только для стандартного макета) */
-.progress-container {
-    background-color: #e0e0e0;
-    border-radius: 5px;
-    height: 10px;
-    overflow: hidden;
-    margin-top: 10px;
-    margin-bottom: 5px;
-    transition: background-color 0.3s;
-}
-
-.progress-fill {
-    background-color: #87CEEB;
-    height: 100%;
-    border-radius: 5px;
-    transition: width 0.5s ease-in-out, background-color 0.3s;
-}
-
-.progress-text {
-    font-size: 1em;
-    color: #666;
-    margin-top: 5px;
-    font-weight: 500;
-}
-
-/* Достижения */
-.section-title-with-date {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20px;
-}
-
-.section-title-with-date .date {
-    font-size: 0.8em;
-    color: #888;
-    font-weight: normal;
-    transition: color 0.3s;
-}
-
-.achievements-list .achievement-item {
-    margin-bottom: 15px;
-}
-
-.achievements-list .achievement-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.achievements-list .achievement-info h3 {
-    margin: 0;
-    font-size: 1.2em;
-}
-
-.achievements-list .date-value {
-    color: #777;
-    font-size: 0.9em;
-    transition: color 0.3s;
-}
-
-/* Свяжитесь с нами */
-.standard-contact-us {
-    margin-top: 20px;
-    text-align: center;
-}
-
-.standard-contact-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: #3f51b5;
-    text-decoration: none;
-    font-size: 1.1em;
-    font-weight: 500;
-    padding: 12px 25px;
-    background-color: #fff;
-    border-radius: 25px;
-    transition: all 0.3s;
-    border: 2px solid #87CEEB;
-    cursor: pointer;
-}
-
-.standard-contact-btn:hover {
-    background-color: #87CEEB;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(135, 206, 235, 0.3);
-}
-
-.standard-contact-btn i {
-    font-size: 1.1em;
-}
-
-/* Таблица лидеров */
-.leaderboard h3 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.3em;
-}
-
-.leader-list {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 20px;
-}
-
-.leader-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-    transition: border-color 0.3s;
-}
-
-.leader-item:last-child {
-    border-bottom: none;
-}
-
-.leader-item .rank {
-    font-weight: bold;
-    margin-right: 10px;
-    color: #555;
-    transition: color 0.3s;
-}
-
-.leader-item .avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background-color: #ccc;
-    background-size: cover;
-    background-position: center;
-    margin-right: 10px;
-}
-
-.leader-item .name {
-    flex-grow: 1;
-    font-weight: 500;
-    transition: color 0.3s;
-}
-
-.leader-item .score {
-    font-weight: bold;
-    color: #87CEEB;
-}
-
-/* Кнопки */
-.btn {
-    background-color: #87CEEB;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 1.1em;
-    text-align: center;
-    transition: background-color 0.3s ease;
-}
-
-.btn:hover {
-    background-color: #64b5f6;
-}
-
-.btn-full {
-    width: 100%;
-}
-
-/* Реклама */
-.advertisement {
-    text-align: center;
-    font-size: 0.9em;
-    color: #777;
-    padding: 15px;
-    background-color: #f0f8ff;
-    border: 1px dashed #cfe8fc;
-    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
-}
-
-/* Подсветка результатов поиска */
-.highlight {
-    background-color: #fff9c4;
-    padding: 0 2px;
-    border-radius: 2px;
-}
-
-/* Стили для центральной плашки */
-.center-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.8);
-    z-index: 10000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    width: 90%;
-    max-width: 450px;
-    pointer-events: none;
-}
-
-.center-message.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(-50%, -50%) scale(1);
-    pointer-events: auto;
-}
-
-.center-message-content {
-    background: linear-gradient(135deg, #3f51b5, #5c6bc0);
-    color: white;
-    padding: 24px 30px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(63, 81, 181, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
-}
-
-.center-message-content::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #ff5722, #ff9800);
-}
-
-.center-message-icon {
-    font-size: 28px;
-    color: #ffcc00;
-    min-width: 40px;
-    text-align: center;
-}
-
-.center-message-text {
-    flex: 1;
-    font-size: 17px;
-    font-weight: 500;
-    line-height: 1.4;
-    text-align: center;
-}
-
-.center-message-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-
-.center-message-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
-}
-
-/* Анимация пульсации */
-@keyframes pulse-glow {
-    0%, 100% {
-        box-shadow: 0 10px 30px rgba(63, 81, 181, 0.3);
+// ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
+const getApiBaseUrl = () => {
+    if (window.location.hostname.includes('railway') || 
+        window.location.hostname.includes('vercel') ||
+        window.location.hostname.includes('netlify')) {
+        return window.location.origin;
     }
-    50% {
-        box-shadow: 0 10px 40px rgba(63, 81, 181, 0.5), 0 0 20px rgba(255, 152, 0, 0.3);
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3000';
+    }
+    
+    return window.location.origin;
+};
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('🌐 API Base URL:', API_BASE_URL);
+
+const CONFIG = {
+    API_BASE_URL: API_BASE_URL,
+    FALLBACK_DATA: {
+        SEARCH: [
+            {
+                title: "Физика - 7 класс",
+                description: "Изучение основ физики",
+                type: "Предмет",
+                icon: "fas fa-atom",
+                keywords: "физика наука 7 класс механика движение"
+            },
+            {
+                title: "Таблица лидеров",
+                description: "Топ учеников по баллам",
+                type: "Рейтинг",
+                icon: "fas fa-chart-line",
+                keywords: "лидеры турнир рейтинг таблица баллы"
+            },
+            {
+                title: "Написать нам",
+                description: "Свяжитесь с поддержкой SCool",
+                type: "Поддержка",
+                icon: "fas fa-envelope",
+                keywords: "написать нам поддержка помощь обратная связь"
+            }
+        ],
+        LEADERBOARD: [
+            { name: 'Елена Васильева', score: 1200, class: 9, rank: 1 },
+            { name: 'Василий Петров', score: 1000, class: 8, rank: 2 },
+            { name: 'Евгений Сидоров', score: 900, class: 7, rank: 3 },
+            { name: 'Мария Козлова', score: 850, class: 9, rank: 4 },
+            { name: 'Алексей Тихонов', score: 800, class: 8, rank: 5 }
+        ]
+    }
+};
+
+let currentUser = null;
+let isAuthenticated = false;
+
+// ==================== API ФУНКЦИИ ====================
+
+async function apiRequest(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`❌ API Error (${endpoint}):`, error.message);
+        
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            showCenterMessage('Ошибка подключения к серверу', 'fa-wifi');
+        }
+        
+        throw error;
     }
 }
 
-.center-message.show .center-message-content {
-    animation: pulse-glow 2s infinite;
-}
-
-/* Модальное окно авторизации */
-.auth-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 10000;
-    justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.3s ease;
-}
-
-.auth-modal.show {
-    display: flex;
-}
-
-.auth-modal-content {
-    background-color: white;
-    width: 90%;
-    max-width: 420px;
-    border-radius: 16px;
-    padding: 30px;
-    position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.4s ease;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
+async function loadServerData() {
+    try {
+        try {
+            const leaderboard = await apiRequest('/api/leaderboard');
+            if (leaderboard && Array.isArray(leaderboard)) {
+                updateAllLeaderboards(leaderboard);
+                console.log('✅ Leaderboard loaded from server');
+            }
+        } catch (error) {
+            console.log('Using fallback leaderboard');
+            updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+        }
+        
+        if (currentUser && currentUser.class_number) {
+            try {
+                const subjects = await apiRequest(`/api/subjects/${currentUser.class_number}`);
+                if (subjects && Array.isArray(subjects)) {
+                    updateSubjectsFromServer(subjects);
+                    console.log('✅ Subjects loaded from server');
+                }
+            } catch (error) {
+                console.log('Using fallback subjects');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading server data:', error);
+        useFallbackData();
     }
 }
 
-.auth-close {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 28px;
-    color: #888;
-    cursor: pointer;
-    transition: color 0.3s;
-    line-height: 1;
-}
-
-.auth-close:hover {
-    color: #333;
-}
-
-/* Вкладки */
-.auth-tabs {
-    display: flex;
-    margin-bottom: 25px;
-    border-bottom: 1px solid #eee;
-}
-
-.auth-tab-btn {
-    flex: 1;
-    padding: 12px;
-    background: none;
-    border: none;
-    font-size: 16px;
-    font-weight: 500;
-    color: #888;
-    cursor: pointer;
-    position: relative;
-    transition: color 0.3s;
-}
-
-.auth-tab-btn.active {
-    color: #3f51b5;
-}
-
-.auth-tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background-color: #3f51b5;
-    border-radius: 3px 3px 0 0;
-}
-
-/* Формы */
-.auth-form {
-    display: none;
-}
-
-.auth-form.active {
-    display: block;
-}
-
-.auth-input-group {
-    margin-bottom: 20px;
-    position: relative;
-}
-
-.auth-input-group i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #888;
-    font-size: 16px;
-}
-
-.auth-input-group input,
-.auth-input-group select {
-    width: 100%;
-    padding: 14px 14px 14px 45px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    font-size: 15px;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    background-color: #fff;
-}
-
-.auth-input-group input:focus,
-.auth-input-group select:focus {
-    outline: none;
-    border-color: #3f51b5;
-    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
-}
-
-.auth-input-group select {
-    appearance: none;
-    cursor: pointer;
-}
-
-/* Опции формы */
-.auth-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-}
-
-.auth-checkbox {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-size: 14px;
-    color: #666;
-}
-
-.auth-checkbox input {
-    margin-right: 8px;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-}
-
-.auth-forgot {
-    color: #3f51b5;
-    text-decoration: none;
-    font-size: 14px;
-    transition: color 0.3s;
-}
-
-.auth-forgot:hover {
-    color: #303f9f;
-    text-decoration: underline;
-}
-
-/* Кнопка отправки */
-.auth-submit-btn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #3f51b5, #5c6bc0);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-bottom: 20px;
-}
-
-.auth-submit-btn:hover {
-    background: linear-gradient(135deg, #303f9f, #3f51b5);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(63, 81, 181, 0.3);
-}
-
-.auth-submit-btn:active {
-    transform: translateY(0);
-}
-
-/* Сообщения об ошибках и успехе */
-.auth-message {
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    display: none;
-}
-
-.auth-message.error {
-    background-color: #ffebee;
-    color: #d32f2f;
-    border: 1px solid #ffcdd2;
-    display: block;
-}
-
-.auth-message.success {
-    background-color: #e8f5e9;
-    color: #388e3c;
-    border: 1px solid #c8e6c9;
-    display: block;
-}
-
-/* Темная тема */
-body.dark-theme {
-    background-color: #121212;
-    color: #e0e0e0;
-}
-
-body.dark-theme .header {
-    background-color: #1e1e1e;
-    border-bottom-color: #333;
-}
-
-body.dark-theme .card,
-body.dark-theme .section-block,
-body.dark-theme .subject-card {
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-}
-
-body.dark-theme h1,
-body.dark-theme h2,
-body.dark-theme h3 {
-    color: #e0e0e0;
-}
-
-body.dark-theme .search-bar {
-    background-color: #2d2d2d;
-}
-
-body.dark-theme .search-bar input {
-    color: #e0e0e0;
-}
-
-body.dark-theme .search-bar input::placeholder {
-    color: #aaa;
-}
-
-body.dark-theme .search-bar .fa-search {
-    color: #aaa;
-}
-
-body.dark-theme .theme-label {
-    color: #aaa;
-}
-
-body.dark-theme .theme-label.light {
-    color: #aaa;
-}
-
-body.dark-theme .theme-label.dark {
-    color: #87CEEB;
-    font-weight: 500;
-}
-
-body.dark-theme .class-selection {
-    background-color: #2d2d2d;
-}
-
-body.dark-theme .class-btn {
-    color: #aaa;
-}
-
-body.dark-theme .class-btn.active {
-    background-color: #87CEEB;
-    color: #fff;
-}
-
-body.dark-theme .learning-card .card-header span,
-body.dark-theme .subject-card h3 {
-    color: #e0e0e0;
-}
-
-body.dark-theme .learning-card .card-header span {
-    background-color: #333;
-    color: #aaa;
-}
-
-body.dark-theme .progress-container {
-    background-color: #333;
-}
-
-body.dark-theme .progress-text {
-    color: #aaa;
-}
-
-body.dark-theme .section-title-with-date .date {
-    color: #aaa;
-}
-
-body.dark-theme .achievements-list .date-value {
-    color: #aaa;
-}
-
-body.dark-theme .desktop-home-link {
-    background-color: #87CEEB;
-    color: white;
-}
-
-body.dark-theme .desktop-home-link:hover {
-    background-color: #64b5f6;
-}
-
-body.dark-theme .desktop-contact-btn,
-body.dark-theme .standard-contact-btn {
-    color: #e0e0e0;
-    border-color: #87CEEB;
-    background-color: #1e1e1e;
-}
-
-body.dark-theme .desktop-contact-btn:hover,
-body.dark-theme .standard-contact-btn:hover {
-    background-color: #87CEEB;
-    color: white;
-}
-
-body.dark-theme .leader-item {
-    border-bottom-color: #333;
-}
-
-body.dark-theme .leader-item .rank,
-body.dark-theme .leader-item .name {
-    color: #e0e0e0;
-}
-
-body.dark-theme .advertisement {
-    background-color: #2d2d2d;
-    border-color: #444;
-    color: #aaa;
-}
-
-body.dark-theme .center-message-content {
-    background: linear-gradient(135deg, #2d3748, #4a5568);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-body.dark-theme .center-message-content::before {
-    background: linear-gradient(90deg, #87CEEB, #5cb4e0);
-}
-
-body.dark-theme .center-message-icon {
-    color: #87CEEB;
-}
-
-body.dark-theme .auth-modal-content {
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-}
-
-body.dark-theme .auth-close {
-    color: #aaa;
-}
-
-body.dark-theme .auth-close:hover {
-    color: #fff;
-}
-
-body.dark-theme .auth-tabs {
-    border-bottom-color: #333;
-}
-
-body.dark-theme .auth-tab-btn {
-    color: #aaa;
-}
-
-body.dark-theme .auth-tab-btn.active {
-    color: #87CEEB;
-}
-
-body.dark-theme .auth-tab-btn.active::after {
-    background-color: #87CEEB;
-}
-
-body.dark-theme .auth-input-group input,
-body.dark-theme .auth-input-group select {
-    background-color: #2d2d2d;
-    border-color: #333;
-    color: #e0e0e0;
-}
-
-body.dark-theme .auth-input-group i {
-    color: #aaa;
-}
-
-body.dark-theme .auth-input-group input:focus,
-body.dark-theme .auth-input-group select:focus {
-    border-color: #87CEEB;
-    box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.1);
-}
-
-body.dark-theme .auth-checkbox {
-    color: #aaa;
-}
-
-body.dark-theme .auth-forgot {
-    color: #87CEEB;
-}
-
-body.dark-theme .auth-forgot:hover {
-    color: #64b5f6;
-}
-
-body.dark-theme .auth-submit-btn {
-    background: linear-gradient(135deg, #2d3748, #4a5568);
-}
-
-body.dark-theme .auth-submit-btn:hover {
-    background: linear-gradient(135deg, #4a5568, #2d3748);
-}
-
-body.dark-theme .auth-message.error {
-    background-color: #2d1b1b;
-    color: #ff8a80;
-    border-color: #5d4037;
-}
-
-body.dark-theme .auth-message.success {
-    background-color: #1b2d1b;
-    color: #80ffa0;
-    border-color: #2e7d32;
-}
-
-body.dark-theme .search-results {
-    background-color: #1e1e1e;
-    border-color: #333;
-}
-
-body.dark-theme .search-result-item {
-    border-bottom-color: #333;
-}
-
-body.dark-theme .search-result-item:hover {
-    background-color: #2d2d2d;
-}
-
-body.dark-theme .search-result-item .result-type {
-    background-color: #333;
-    color: #aaa;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-    .header {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
+function updateSubjectsFromServer(subjectsData) {
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            const subjectCards = layout.querySelectorAll('.subject-card');
+            subjectCards.forEach((card, index) => {
+                if (subjectsData[index]) {
+                    const titleElement = card.querySelector('h3');
+                    if (titleElement) {
+                        titleElement.textContent = subjectsData[index].name || 'Физика';
+                    }
+                    
+                    const classElement = card.querySelector('p');
+                    if (classElement) {
+                        classElement.textContent = `${subjectsData[index].class_number || 7} класс`;
+                    }
+                }
+            });
+        }
+    });
+}
+
+// ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
+
+async function initApp() {
+    console.log('🚀 Инициализация SCool...');
+    
+    try {
+        checkUserSession();
+        setupEventListeners();
+        initializeAllLayouts();
+        
+        await loadServerData();
+        
+        console.log('✅ Приложение успешно инициализировано');
+    } catch (error) {
+        console.error('❌ Ошибка инициализации:', error);
+        useFallbackData();
     }
-    .search-bar {
-        order: 3;
-        flex-basis: 100%;
-        margin: 10px 0;
+}
+
+function checkUserSession() {
+    const savedUser = localStorage.getItem('scool_user');
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            isAuthenticated = true;
+            updateUserInterface();
+            console.log('👤 Пользователь авторизован:', currentUser);
+        } catch (e) {
+            console.error('❌ Ошибка парсинга данных пользователя:', e);
+            logoutUser();
+        }
     }
-    .header-icons {
-        margin-left: auto;
-        order: 2;
+}
+
+function updateUserInterface() {
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn && currentUser) {
+        profileBtn.title = currentUser.name || 'Профиль';
+        profileBtn.style.color = '#4CAF50';
     }
-    .theme-container {
-        margin-right: 0;
+}
+
+function initializeAllLayouts() {
+    console.log('📊 Инициализация всех макетов...');
+    
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            initializePhysicsSubjects(layout, layoutId);
+        }
+    });
+}
+
+function initializePhysicsSubjects(layout, layoutId) {
+    let classNumber;
+    
+    switch(layoutId) {
+        case 'desktop9-layout':
+            classNumber = 7;
+            break;
+        case 'desktop10-layout':
+            classNumber = 8;
+            break;
+        case 'desktop11-layout':
+            classNumber = 9;
+            break;
+        default:
+            classNumber = currentUser ? currentUser.class_number : 7;
     }
-    .main-content {
-        flex-direction: column;
+    
+    const subjectCards = layout.querySelectorAll('.subject-card');
+    
+    subjectCards.forEach((card, index) => {
+        const titleElement = card.querySelector('h3');
+        if (titleElement) {
+            titleElement.textContent = 'Физика';
+        }
+        
+        const classElement = card.querySelector('p');
+        if (classElement) {
+            classElement.textContent = `${classNumber} класс`;
+        }
+    });
+}
+
+function updateAllLeaderboards(leaderboardData) {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    if (!leaderboardList) return;
+    
+    leaderboardList.innerHTML = '';
+    
+    leaderboardData.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.className = 'leader-item';
+        
+        const firstLetter = (item.name || 'У').charAt(0).toUpperCase();
+        const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
+        const color = colors[index % colors.length];
+        
+        li.innerHTML = `
+            <span class="rank">${item.rank || index + 1}</span>
+            <div class="avatar" style="background-color: ${color}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 30px; height: 30px; font-weight: bold;">
+                ${firstLetter}
+            </div>
+            <span class="name">${item.name || `Ученик ${index + 1}`}</span>
+            <span class="score">${item.score || 0}</span>
+        `;
+        
+        leaderboardList.appendChild(li);
+    });
+}
+
+function useFallbackData() {
+    console.log('📦 Используем резервные данные...');
+    updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+}
+
+// ==================== АВТОРИЗАЦИЯ ====================
+
+function openAuthModal() {
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) {
+        authModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        switchAuthTab('login');
+        clearAuthMessages();
+    }
+}
+
+function closeAuthModal() {
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) {
+        authModal.classList.remove('show');
+        document.body.style.overflow = '';
+        clearAuthForms();
+    }
+}
+
+function switchAuthTab(tabName) {
+    const tabs = document.querySelectorAll('.auth-tab-btn');
+    const forms = document.querySelectorAll('.auth-form');
+    
+    tabs.forEach(tab => tab.classList.remove('active'));
+    forms.forEach(form => form.classList.remove('active'));
+    
+    const activeTab = document.querySelector(`.auth-tab-btn[data-tab="${tabName}"]`);
+    const activeForm = document.getElementById(`${tabName}-form`);
+    
+    if (activeTab) activeTab.classList.add('active');
+    if (activeForm) activeForm.classList.add('active');
+    
+    clearAuthMessages();
+}
+
+function clearAuthForms() {
+    document.getElementById('login-form')?.reset();
+    document.getElementById('register-form')?.reset();
+    clearAuthMessages();
+}
+
+function clearAuthMessages() {
+    const messages = document.querySelectorAll('.auth-message');
+    messages.forEach(msg => msg.remove());
+}
+
+function showAuthMessage(message, type = 'error') {
+    clearAuthMessages();
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `auth-message ${type}`;
+    messageDiv.textContent = message;
+    messageDiv.style.display = 'block';
+    
+    const activeForm = document.querySelector('.auth-form.active');
+    if (activeForm) {
+        activeForm.insertBefore(messageDiv, activeForm.firstChild);
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 3000);
+        }
+    }
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const rememberMe = document.getElementById('remember-me').checked;
+    
+    if (!email || !password) {
+        showAuthMessage('Заполните все поля', 'error');
+        return;
+    }
+    
+    if (!validateEmail(email)) {
+        showAuthMessage('Введите корректный email', 'error');
+        return;
+    }
+    
+    try {
+        showAuthMessage('Выполняется вход...', 'info');
+        
+        const response = await apiRequest('/api/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+        
+        if (!response.success) {
+            throw new Error(response.message || 'Ошибка входа');
+        }
+        
+        const user = {
+            id: response.user?.id || Date.now(),
+            email: email,
+            name: response.user?.name || email.split('@')[0],
+            class_number: response.user?.class_number || 7,
+            remember_me: rememberMe,
+            token: response.token
+        };
+        
+        saveUserSession(user, rememberMe);
+        
+        showAuthMessage('Вход выполнен успешно!', 'success');
+        
+        setTimeout(() => {
+            closeAuthModal();
+            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
+            updateUserInterface();
+            loadServerData();
+        }, 1500);
+        
+    } catch (error) {
+        showAuthMessage(error.message || 'Ошибка входа', 'error');
+    }
+}
+
+async function handleRegister(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+    const passwordConfirm = document.getElementById('register-password-confirm').value;
+    const classNumber = document.getElementById('register-class').value;
+    
+    if (!name || !email || !password || !passwordConfirm || !classNumber) {
+        showAuthMessage('Заполните все поля', 'error');
+        return;
+    }
+    
+    if (!validateEmail(email)) {
+        showAuthMessage('Введите корректный email', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showAuthMessage('Пароль должен быть не менее 6 символов', 'error');
+        return;
+    }
+    
+    if (password !== passwordConfirm) {
+        showAuthMessage('Пароли не совпадают', 'error');
+        return;
+    }
+    
+    try {
+        showAuthMessage('Регистрация...', 'info');
+        
+        const response = await apiRequest('/api/register', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                email, 
+                password, 
+                fullName: name, 
+                classNumber: parseInt(classNumber) 
+            })
+        });
+        
+        if (!response.success) {
+            throw new Error(response.message || 'Ошибка регистрации');
+        }
+        
+        const user = {
+            id: response.user?.id || Date.now(),
+            email: email,
+            name: name,
+            class_number: parseInt(classNumber),
+            token: response.token
+        };
+        
+        saveUserSession(user, true);
+        
+        showAuthMessage('Регистрация прошла успешно!', 'success');
+        
+        setTimeout(() => {
+            closeAuthModal();
+            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
+            updateUserInterface();
+            loadServerData();
+        }, 1500);
+        
+    } catch (error) {
+        showAuthMessage(error.message || 'Ошибка регистрации', 'error');
+    }
+}
+
+function saveUserSession(user, rememberMe = true) {
+    currentUser = user;
+    isAuthenticated = true;
+    
+    if (rememberMe) {
+        localStorage.setItem('scool_user', JSON.stringify(user));
+    } else {
+        sessionStorage.setItem('scool_user', JSON.stringify(user));
+    }
+}
+
+function logoutUser() {
+    currentUser = null;
+    isAuthenticated = false;
+    localStorage.removeItem('scool_user');
+    sessionStorage.removeItem('scool_user');
+    
+    showCenterMessage('Вы вышли из системы', 'fa-sign-out-alt');
+    updateUserInterface();
+    useFallbackData();
+}
+
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+
+function showProfileMenu() {
+    const menu = document.createElement('div');
+    menu.className = 'profile-menu';
+    menu.style.cssText = `
+        position: absolute;
+        top: 60px;
+        right: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         padding: 15px;
-        margin: 15px auto;
-    }
-    .left-section, .right-sidebar {
-        flex: auto;
-        width: 100%;
-    }
-    .learning-cards {
-        flex-direction: column;
-    }
-    .learning-card {
-        min-width: unset;
-    }
-    .subject-card {
-        padding: 20px;
-    }
-    .desktop-header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: stretch;
-    }
-    .desktop-home-link {
-        text-align: center;
-        justify-content: center;
+        min-width: 200px;
+        z-index: 1000;
+    `;
+    
+    menu.innerHTML = `
+        <div style="padding: 10px; border-bottom: 1px solid #eee;">
+            <strong>${currentUser.name}</strong>
+            <div style="color: #666; font-size: 0.9em;">${currentUser.email}</div>
+            <div style="color: #888; font-size: 0.8em;">Класс: ${currentUser.class_number}</div>
+        </div>
+        <button id="logout-btn" style="width: 100%; padding: 10px; margin-top: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            <i class="fas fa-sign-out-alt"></i> Выйти
+        </button>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    document.getElementById('logout-btn').addEventListener('click', function() {
+        logoutUser();
+        menu.remove();
+    });
+    
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target) && e.target.id !== 'profile-btn') {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+}
+
+function showEmailMessage(email) {
+    showCenterMessage(`Напишите нам на: ${email}`, 'fa-envelope');
+}
+
+function showCenterMessage(message, icon = 'fa-info-circle') {
+    const messageElement = document.getElementById('center-message');
+    const messageText = document.getElementById('center-message-text');
+    const messageIcon = document.getElementById('center-message-icon');
+    
+    if (messageElement && messageText && messageIcon) {
+        messageText.textContent = message;
+        messageIcon.className = `fas ${icon}`;
+        messageElement.classList.add('show');
+        
+        setTimeout(() => {
+            messageElement.classList.remove('show');
+        }, 3000);
     }
 }
 
-@media (max-width: 480px) {
-    .header {
-        padding: 10px 15px;
-    }
-    .logo {
-        font-size: 1.2em;
-    }
-    .header-icons {
-        font-size: 1em;
-    }
-    .theme-container {
-        flex-direction: column;
-        gap: 5px;
-        align-items: center;
-    }
-    .theme-label {
-        font-size: 0.75em;
-    }
-    .class-selection {
-        flex-wrap: wrap;
-        width: 100%;
-        justify-content: center;
-    }
-    .class-btn {
-        flex: 1;
-        padding: 8px 10px;
-        font-size: 0.9em;
-    }
-    .desktop-home-link,
-    .desktop-contact-btn,
-    .standard-contact-btn {
-        padding: 10px 15px;
-        font-size: 1em;
-    }
-    .center-message-content {
-        padding: 20px 24px;
-        gap: 12px;
-    }
-    .center-message-icon {
-        font-size: 24px;
-        min-width: 36px;
-    }
-    .center-message-text {
-        font-size: 16px;
-    }
-    .center-message-close {
-        width: 28px;
-        height: 28px;
-        font-size: 14px;
-    }
-    .auth-modal-content {
-        padding: 20px;
-        width: 95%;
-    }
-    .auth-tabs {
-        flex-direction: column;
-    }
-    .auth-tab-btn {
-        text-align: center;
-        padding: 10px;
-    }
-    .auth-tab-btn.active::after {
-        bottom: 0;
-        height: 100%;
-        width: 3px;
-        left: 0;
-        border-radius: 3px 0 0 3px;
+function hideCenterMessage() {
+    const messageElement = document.getElementById('center-message');
+    if (messageElement) {
+        messageElement.classList.remove('show');
     }
 }
+
+function switchLayout(classNumber) {
+    hideAllLayouts();
+    
+    const layoutId = getLayoutIdByClass(classNumber);
+    const layout = document.getElementById(layoutId);
+    
+    if (layout) {
+        layout.style.display = 'flex';
+        layout.classList.add('active');
+    }
+    
+    updateActiveClassButton(classNumber);
+}
+
+function getLayoutIdByClass(classNumber) {
+    switch(classNumber) {
+        case '7': return 'desktop9-layout';
+        case '8': return 'desktop10-layout';
+        case '9': return 'desktop11-layout';
+        default: return 'standard-layout';
+    }
+}
+
+function hideAllLayouts() {
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            layout.style.display = 'none';
+            layout.classList.remove('active');
+        }
+    });
+}
+
+function updateActiveClassButton(selectedClass) {
+    document.querySelectorAll('.class-btn').forEach(button => {
+        if (button.getAttribute('data-class') === selectedClass) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+}
+
+function getActiveLayout() {
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    for (const layoutId of layouts) {
+        const layout = document.getElementById(layoutId);
+        if (layout && layout.style.display !== 'none') {
+            return layout;
+        }
+    }
+    return null;
+}
+
+function goToHome() {
+    hideAllLayouts();
+    document.getElementById('standard-layout').style.display = 'flex';
+    document.getElementById('standard-layout').classList.add('active');
+    
+    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('.class-btn[data-class="7"]')?.classList.add('active');
+}
+
+function highlightText(text, searchTerm) {
+    if (!searchTerm || searchTerm.length < 2) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+function updateThemeLabels(isDark) {
+    const lightLabel = document.querySelector('.theme-label.light');
+    const darkLabel = document.querySelector('.theme-label.dark');
+    
+    if (lightLabel && darkLabel) {
+        if (isDark) {
+            lightLabel.style.color = '#aaa';
+            lightLabel.style.fontWeight = 'normal';
+            darkLabel.style.color = '#87CEEB';
+            darkLabel.style.fontWeight = '500';
+        } else {
+            lightLabel.style.color = '#3f51b5';
+            lightLabel.style.fontWeight = '500';
+            darkLabel.style.color = '#666';
+            darkLabel.style.fontWeight = 'normal';
+        }
+    }
+}
+
+// ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
+
+function setupEventListeners() {
+    // Переключение темы
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light');
+            }
+            updateThemeLabels(this.checked);
+        });
+    }
+    
+    // Переключение классов
+    document.querySelectorAll('.class-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const selectedClass = this.getAttribute('data-class');
+            switchLayout(selectedClass);
+            
+            if (currentUser) {
+                currentUser.class_number = parseInt(selectedClass);
+                localStorage.setItem('scool_user', JSON.stringify(currentUser));
+            }
+            
+            const layoutId = getLayoutIdByClass(selectedClass);
+            const layout = document.getElementById(layoutId);
+            if (layout) {
+                if (isAuthenticated) {
+                    loadSubjectsForClass(selectedClass);
+                } else {
+                    initializePhysicsSubjects(layout, layoutId);
+                }
+            }
+        });
+    });
+    
+    // Поиск
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value.trim();
+            
+            if (searchTerm.length < 2) {
+                document.getElementById('search-results').classList.remove('show');
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                performSearch(searchTerm);
+            }, 300);
+        });
+        
+        document.addEventListener('click', function(event) {
+            const searchResults = document.getElementById('search-results');
+            if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.classList.remove('show');
+            }
+        });
+    }
+    
+    // Кнопки
+    document.getElementById('full-table-btn')?.addEventListener('click', function() {
+        showCenterMessage('Функция "Лидеры турнира" в разработке!', 'fa-trophy');
+    });
+    
+    document.getElementById('notification-btn')?.addEventListener('click', function() {
+        if (!isAuthenticated) {
+            openAuthModal();
+        } else {
+            showCenterMessage('Функция "Уведомления" в разработке!', 'fa-bell');
+        }
+    });
+    
+    document.getElementById('profile-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (isAuthenticated && currentUser) {
+            showProfileMenu();
+        } else {
+            openAuthModal();
+        }
+    });
+    
+    // Кнопки "Написать нам"
+    document.querySelectorAll('.mail-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const email = this.getAttribute('data-email');
+            showEmailMessage(email);
+        });
+    });
+    
+    // Кнопки "На главную"
+    document.getElementById('home-from-desktop9')?.addEventListener('click', goToHome);
+    document.getElementById('home-from-desktop10')?.addEventListener('click', goToHome);
+    document.getElementById('home-from-desktop11')?.addEventListener('click', goToHome);
+    
+    // Кнопка закрытия центральной плашки
+    document.getElementById('close-center-message')?.addEventListener('click', hideCenterMessage);
+    
+    // Модальное окно авторизации
+    document.querySelector('.auth-close')?.addEventListener('click', closeAuthModal);
+    
+    document.getElementById('auth-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAuthModal();
+        }
+    });
+    
+    document.querySelectorAll('.auth-tab-btn').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            switchAuthTab(tabName);
+        });
+    });
+    
+    document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+    document.getElementById('register-form')?.addEventListener('submit', handleRegister);
+    
+    document.querySelector('.auth-forgot')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        showCenterMessage('Функция восстановления пароля в разработке!', 'fa-key');
+    });
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAuthModal();
+        }
+    });
+}
+
+async function loadSubjectsForClass(classNumber) {
+    try {
+        const subjects = await apiRequest(`/api/subjects/${classNumber}`);
+        if (subjects && Array.isArray(subjects)) {
+            const layoutId = getLayoutIdByClass(classNumber);
+            const layout = document.getElementById(layoutId);
+            if (layout) {
+                const subjectCards = layout.querySelectorAll('.subject-card');
+                subjectCards.forEach((card, index) => {
+                    if (subjects[index]) {
+                        const titleElement = card.querySelector('h3');
+                        if (titleElement) {
+                            titleElement.textContent = subjects[index].name || 'Физика';
+                        }
+                        
+                        const classElement = card.querySelector('p');
+                        if (classElement) {
+                            classElement.textContent = `${classNumber} класс`;
+                        }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.log('Using fallback subjects for class', classNumber);
+    }
+}
+
+async function performSearch(searchTerm) {
+    try {
+        const results = await apiRequest(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+        displaySearchResults(results, searchTerm);
+    } catch (error) {
+        const localResults = CONFIG.FALLBACK_DATA.SEARCH.filter(item => 
+            item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        displaySearchResults(localResults, searchTerm);
+    }
+}
+
+function displaySearchResults(results, searchTerm) {
+    const searchResults = document.getElementById('search-results');
+    const searchInput = document.getElementById('search-input');
+    if (!searchResults) return;
+    
+    searchResults.innerHTML = '';
+    
+    if (results.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'search-no-results';
+        noResults.innerHTML = '<i class="fas fa-search"></i> ничего не найдено';
+        searchResults.appendChild(noResults);
+    } else {
+        results.forEach(item => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'search-result-item';
+            
+            resultItem.innerHTML = `
+                <i class="${item.icon || 'fas fa-search'} result-icon"></i>
+                <div class="result-text">
+                    <div>${highlightText(item.title, searchTerm)}</div>
+                    <small>${highlightText(item.description, searchTerm)}</small>
+                </div>
+                <span class="result-type">${item.type}</span>
+            `;
+            
+            resultItem.addEventListener('click', function() {
+                searchResults.classList.remove('show');
+                if (searchInput) searchInput.value = '';
+                
+                if (item.type === 'Таблица лидеров') {
+                    document.querySelector('.leaderboard')?.scrollIntoView({ behavior: 'smooth' });
+                } else if (item.type === 'Написать нам') {
+                    const mailButtons = document.querySelectorAll('.mail-button');
+                    if (mailButtons.length > 0) {
+                        mailButtons[0].click();
+                    }
+                } else if (item.type === 'Предмет') {
+                    const activeLayout = getActiveLayout();
+                    if (activeLayout) {
+                        const subjectCards = activeLayout.querySelectorAll('.subject-card');
+                        if (subjectCards.length > 0) {
+                            subjectCards[0].scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                }
+            });
+            
+            searchResults.appendChild(resultItem);
+        });
+    }
+    
+    searchResults.classList.add('show');
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded - SCool инициализация');
+    
+    // Инициализация темы
+    const themeToggle = document.getElementById('theme-toggle');
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-theme');
+        if (themeToggle) themeToggle.checked = true;
+        updateThemeLabels(true);
+    } else {
+        updateThemeLabels(false);
+    }
+    
+    // Инициализация приложения
+    initApp();
+    
+    // Начальное состояние макетов
+    document.getElementById('desktop9-layout').style.display = 'none';
+    document.getElementById('desktop10-layout').style.display = 'none';
+    document.getElementById('desktop11-layout').style.display = 'none';
+    document.getElementById('standard-layout').style.display = 'flex';
+    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+});
