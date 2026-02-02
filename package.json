@@ -9,16 +9,16 @@
     "railway": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.6",
-    "dotenv": "^16.6.1",
-    "mysql2": "^3.16.2",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.3",
-    "express-validator": "^7.3.1"
+    "express": "^4.x",
+    "cors": "^2.x",
+    "dotenv": "^16.x",
+    "mysql2": "^3.x",
+    "bcryptjs": "^2.x",
+    "jsonwebtoken": "^9.x",
+    "express-validator": "^7.x"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.x"
   },
   "engines": {
     "node": ">=18.0.0"
