@@ -547,7 +547,6 @@ async function handleRegister(event) {
     const password = document.getElementById('register-password').value;
     const passwordConfirm = document.getElementById('register-password-confirm').value;
     const classNumber = document.getElementById('register-class').value;
-    const termsAccepted = document.getElementById('register-terms').checked;
     
     // Валидация
     if (!name || !email || !password || !passwordConfirm || !classNumber) {
@@ -567,11 +566,6 @@ async function handleRegister(event) {
     
     if (password !== passwordConfirm) {
         showAuthMessage('Пароли не совпадают', 'error');
-        return;
-    }
-    
-    if (!termsAccepted) {
-        showAuthMessage('Примите условия использования', 'error');
         return;
     }
     
@@ -822,14 +816,6 @@ function setupEventListeners() {
     
     // Отправка формы регистрации
     document.getElementById('register-form')?.addEventListener('submit', handleRegister);
-    
-    // Кнопки социальных сетей
-    document.querySelectorAll('.auth-social-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const provider = this.classList.contains('google') ? 'Google' : 'VK';
-            showCenterMessage(`Вход через ${provider} в разработке!`, 'fa-external-link-alt');
-        });
-    });
     
     // Ссылка "Забыли пароль?"
     document.querySelector('.auth-forgot')?.addEventListener('click', function(e) {
@@ -1229,318 +1215,318 @@ function showEmailMessage(email) {
             
             .copy-success {
                 color: #4CAF50;
-                font-size: 14px;
-                margin-top: 15px;
-                animation: fadeInOut 3s ease;
+    font-size: 14px;
+    margin-top: 15px;
+    animation: fadeInOut 3s ease;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+`;
+document.head.appendChild(styleElement);
+}
+
+// Удаляем предыдущие сообщения
+const existingOverlays = document.querySelectorAll('.email-message-overlay');
+existingOverlays.forEach(overlay => overlay.remove());
+
+// Создаем оверлей
+const overlay = document.createElement('div');
+overlay.className = 'email-message-overlay';
+
+// Создаем сообщение
+overlay.innerHTML = `
+<div class="email-message-box">
+    <i class="fas fa-envelope email-icon-large"></i>
+    <h3>Написать нам</h3>
+    <p>Наша почта для обратной связи:</p>
+    <div class="email-address">${email}</div>
+    <p class="email-hint">Скопируйте адрес и напишите нам в вашем почтовом клиенте</p>
+    <div class="email-buttons">
+        <button class="email-btn email-copy-btn">
+            <i class="fas fa-copy"></i> Скопировать
+        </button>
+        <button class="email-btn email-close-btn">
+            <i class="fas fa-times"></i> Закрыть
+        </button>
+    </div>
+</div>
+`;
+
+document.body.appendChild(overlay);
+
+// Обработчики событий
+const copyBtn = overlay.querySelector('.email-copy-btn');
+const closeBtn = overlay.querySelector('.email-close-btn');
+
+copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(email).then(() => {
+        const successMsg = document.createElement('div');
+        successMsg.className = 'copy-success';
+        successMsg.textContent = 'Email скопирован в буфер обмена!';
+        overlay.querySelector('.email-message-box').appendChild(successMsg);
+        
+        setTimeout(() => {
+            if (successMsg.parentNode) {
+                successMsg.remove();
             }
-            
-            @keyframes fadeInOut {
-                0% { opacity: 0; }
-                20% { opacity: 1; }
-                80% { opacity: 1; }
-                100% { opacity: 0; }
-            }
-        `;
-        document.head.appendChild(styleElement);
-    }
-    
-    // Удаляем предыдущие сообщения
-    const existingOverlays = document.querySelectorAll('.email-message-overlay');
-    existingOverlays.forEach(overlay => overlay.remove());
-    
-    // Создаем оверлей
-    const overlay = document.createElement('div');
-    overlay.className = 'email-message-overlay';
-    
-    // Создаем сообщение
-    overlay.innerHTML = `
-        <div class="email-message-box">
-            <i class="fas fa-envelope email-icon-large"></i>
-            <h3>Написать нам</h3>
-            <p>Наша почта для обратной связи:</p>
-            <div class="email-address">${email}</div>
-            <p class="email-hint">Скопируйте адрес и напишите нам в вашем почтовом клиенте</p>
-            <div class="email-buttons">
-                <button class="email-btn email-copy-btn">
-                    <i class="fas fa-copy"></i> Скопировать
-                </button>
-                <button class="email-btn email-close-btn">
-                    <i class="fas fa-times"></i> Закрыть
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(overlay);
-    
-    // Обработчики событий
-    const copyBtn = overlay.querySelector('.email-copy-btn');
-    const closeBtn = overlay.querySelector('.email-close-btn');
-    
-    copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(email).then(() => {
-            const successMsg = document.createElement('div');
-            successMsg.className = 'copy-success';
-            successMsg.textContent = 'Email скопирован в буфер обмена!';
-            overlay.querySelector('.email-message-box').appendChild(successMsg);
-            
-            setTimeout(() => {
-                if (successMsg.parentNode) {
-                    successMsg.remove();
-                }
-            }, 3000);
-        });
+        }, 3000);
     });
-    
-    closeBtn.addEventListener('click', () => {
+});
+
+closeBtn.addEventListener('click', () => {
+    overlay.remove();
+});
+
+overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
         overlay.remove();
-    });
-    
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.remove();
-        }
-    });
-    
-    // Автозакрытие через 10 секунд
-    setTimeout(() => {
-        if (overlay.parentNode) {
-            overlay.remove();
-        }
-    }, 10000);
+    }
+});
+
+// Автозакрытие через 10 секунд
+setTimeout(() => {
+    if (overlay.parentNode) {
+        overlay.remove();
+    }
+}, 10000);
 }
 
 // Показать центральную плашку (для уведомлений и кнопки "Вся таблица")
 function showCenterMessage(message, icon = 'fa-tools') {
-    const centerMessage = document.getElementById('center-message');
-    const centerIcon = document.getElementById('center-message-icon');
-    const centerText = document.getElementById('center-message-text');
-    
-    if (!centerMessage || !centerIcon || !centerText) return;
-    
-    // Устанавливаем иконку и текст
-    centerIcon.className = `fas ${icon} center-message-icon`;
-    centerText.textContent = message;
-    
-    // Показываем плашку
-    centerMessage.classList.add('show');
-    
-    // Автозакрытие через 4 секунды
-    setTimeout(() => {
-        hideCenterMessage();
-    }, 4000);
+const centerMessage = document.getElementById('center-message');
+const centerIcon = document.getElementById('center-message-icon');
+const centerText = document.getElementById('center-message-text');
+
+if (!centerMessage || !centerIcon || !centerText) return;
+
+// Устанавливаем иконку и текст
+centerIcon.className = `fas ${icon} center-message-icon`;
+centerText.textContent = message;
+
+// Показываем плашку
+centerMessage.classList.add('show');
+
+// Автозакрытие через 4 секунды
+setTimeout(() => {
+    hideCenterMessage();
+}, 4000);
 }
 
 // Скрыть центральную плашку
 function hideCenterMessage() {
-    const centerMessage = document.getElementById('center-message');
-    if (centerMessage) {
-        centerMessage.classList.remove('show');
-    }
+const centerMessage = document.getElementById('center-message');
+if (centerMessage) {
+    centerMessage.classList.remove('show');
+}
 }
 
 function displaySearchResults(results, searchTerm) {
-    const searchResults = document.getElementById('search-results');
-    const searchInput = document.getElementById('search-input');
-    if (!searchResults) return;
-    
-    searchResults.innerHTML = '';
-    
-    if (results.length === 0) {
-        const noResults = document.createElement('div');
-        noResults.className = 'search-no-results';
-        noResults.innerHTML = `
-            <i class="fas fa-search" style="margin-right: 8px;"></i>
-            ничего не найдено
+const searchResults = document.getElementById('search-results');
+const searchInput = document.getElementById('search-input');
+if (!searchResults) return;
+
+searchResults.innerHTML = '';
+
+if (results.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'search-no-results';
+    noResults.innerHTML = `
+        <i class="fas fa-search" style="margin-right: 8px;"></i>
+        ничего не найдено
+    `;
+    searchResults.appendChild(noResults);
+} else {
+    results.forEach(item => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        
+        const highlightedTitle = highlightText(item.title, searchTerm);
+        const highlightedDesc = highlightText(item.description, searchTerm);
+        
+        resultItem.innerHTML = `
+            <i class="${item.icon || 'fas fa-search'} result-icon"></i>
+            <div class="result-text">
+                <div>${highlightedTitle}</div>
+                <small>${highlightedDesc}</small>
+            </div>
+            <span class="result-type">${item.type}</span>
         `;
-        searchResults.appendChild(noResults);
-    } else {
-        results.forEach(item => {
-            const resultItem = document.createElement('div');
-            resultItem.className = 'search-result-item';
+        
+        resultItem.addEventListener('click', function() {
+            searchResults.classList.remove('show');
+            if (searchInput) searchInput.value = '';
             
-            const highlightedTitle = highlightText(item.title, searchTerm);
-            const highlightedDesc = highlightText(item.description, searchTerm);
-            
-            resultItem.innerHTML = `
-                <i class="${item.icon || 'fas fa-search'} result-icon"></i>
-                <div class="result-text">
-                    <div>${highlightedTitle}</div>
-                    <small>${highlightedDesc}</small>
-                </div>
-                <span class="result-type">${item.type}</span>
-            `;
-            
-            resultItem.addEventListener('click', function() {
-                searchResults.classList.remove('show');
-                if (searchInput) searchInput.value = '';
-                
-                if (item.type === 'Таблица лидеров') {
-                    document.querySelector('.leaderboard')?.scrollIntoView({ behavior: 'smooth' });
-                } else if (item.type === 'Написать нам') {
-                    const mailButtons = document.querySelectorAll('.mail-button');
-                    if (mailButtons.length > 0) {
-                        mailButtons[0].click();
-                    }
-                } else if (item.type === 'Предмет') {
-                    const activeLayout = getActiveLayout();
-                    if (activeLayout) {
-                        const subjectCards = activeLayout.querySelectorAll('.subject-card');
-                        if (subjectCards.length > 0) {
-                            subjectCards[0].scrollIntoView({ behavior: 'smooth' });
-                        }
+            if (item.type === 'Таблица лидеров') {
+                document.querySelector('.leaderboard')?.scrollIntoView({ behavior: 'smooth' });
+            } else if (item.type === 'Написать нам') {
+                const mailButtons = document.querySelectorAll('.mail-button');
+                if (mailButtons.length > 0) {
+                    mailButtons[0].click();
+                }
+            } else if (item.type === 'Предмет') {
+                const activeLayout = getActiveLayout();
+                if (activeLayout) {
+                    const subjectCards = activeLayout.querySelectorAll('.subject-card');
+                    if (subjectCards.length > 0) {
+                        subjectCards[0].scrollIntoView({ behavior: 'smooth' });
                     }
                 }
-            });
-            
-            searchResults.appendChild(resultItem);
+            }
         });
-    }
-    
-    searchResults.classList.add('show');
+        
+        searchResults.appendChild(resultItem);
+    });
+}
+
+searchResults.classList.add('show');
 }
 
 // ==================== НАВИГАЦИЯ И МАКЕТЫ ====================
 
 function getLayoutIdByClass(className) {
-    switch(className) {
-        case '7': return 'desktop9-layout';
-        case '8': return 'desktop10-layout';
-        case '9': return 'desktop11-layout';
-        default: return 'standard-layout';
-    }
+switch(className) {
+    case '7': return 'desktop9-layout';
+    case '8': return 'desktop10-layout';
+    case '9': return 'desktop11-layout';
+    default: return 'standard-layout';
+}
 }
 
 function switchLayout(selectedClass) {
-    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
-    const selectedBtn = document.querySelector(`.class-btn[data-class="${selectedClass}"]`);
-    if (selectedBtn) selectedBtn.classList.add('active');
-    
-    document.getElementById('desktop9-layout').style.display = 'none';
-    document.getElementById('desktop10-layout').style.display = 'none';
-    document.getElementById('desktop11-layout').style.display = 'none';
-    document.getElementById('standard-layout').style.display = 'none';
-    
-    const layoutId = getLayoutIdByClass(selectedClass);
-    document.getElementById(layoutId).style.display = 'flex';
-    
-    updatePageTitle(selectedClass);
+document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+const selectedBtn = document.querySelector(`.class-btn[data-class="${selectedClass}"]`);
+if (selectedBtn) selectedBtn.classList.add('active');
+
+document.getElementById('desktop9-layout').style.display = 'none';
+document.getElementById('desktop10-layout').style.display = 'none';
+document.getElementById('desktop11-layout').style.display = 'none';
+document.getElementById('standard-layout').style.display = 'none';
+
+const layoutId = getLayoutIdByClass(selectedClass);
+document.getElementById(layoutId).style.display = 'flex';
+
+updatePageTitle(selectedClass);
 }
 
 function getActiveLayout() {
-    const layouts = [
-        'desktop9-layout',
-        'desktop10-layout', 
-        'desktop11-layout',
-        'standard-layout'
-    ];
-    
-    for (const layoutId of layouts) {
-        const layout = document.getElementById(layoutId);
-        if (layout && layout.style.display !== 'none') {
-            return layout;
-        }
+const layouts = [
+    'desktop9-layout',
+    'desktop10-layout', 
+    'desktop11-layout',
+    'standard-layout'
+];
+
+for (const layoutId of layouts) {
+    const layout = document.getElementById(layoutId);
+    if (layout && layout.style.display !== 'none') {
+        return layout;
     }
-    
-    return document.getElementById('standard-layout');
+}
+
+return document.getElementById('standard-layout');
 }
 
 function goToHome() {
-    document.getElementById('desktop9-layout').style.display = 'none';
-    document.getElementById('desktop10-layout').style.display = 'none';
-    document.getElementById('desktop11-layout').style.display = 'none';
-    document.getElementById('standard-layout').style.display = 'flex';
-    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+document.getElementById('desktop9-layout').style.display = 'none';
+document.getElementById('desktop10-layout').style.display = 'none';
+document.getElementById('desktop11-layout').style.display = 'none';
+document.getElementById('standard-layout').style.display = 'flex';
+document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
 }
 
 function updatePageTitle(classNumber) {
-    const pageTitles = document.querySelectorAll('.page-title, .layout-title');
-    pageTitles.forEach(title => {
-        if (title.textContent.includes('класс')) {
-            title.textContent = `Физика - ${classNumber} класс`;
-        }
-    });
+const pageTitles = document.querySelectorAll('.page-title, .layout-title');
+pageTitles.forEach(title => {
+    if (title.textContent.includes('класс')) {
+        title.textContent = `Физика - ${classNumber} класс`;
+    }
+});
 }
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 function highlightText(text, searchTerm) {
-    if (!searchTerm) return text;
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
+if (!searchTerm) return text;
+const regex = new RegExp(`(${searchTerm})`, 'gi');
+return text.replace(regex, '<span class="highlight">$1</span>');
 }
 
 function updateThemeLabels(isDark) {
-    const lightLabel = document.querySelector('.theme-label.light');
-    const darkLabel = document.querySelector('.theme-label.dark');
-    
-    if (lightLabel && darkLabel) {
-        if (isDark) {
-            lightLabel.style.color = '#aaa';
-            lightLabel.style.fontWeight = 'normal';
-            darkLabel.style.color = '#87CEEB';
-            darkLabel.style.fontWeight = '500';
-        } else {
-            lightLabel.style.color = '#3f51b5';
-            lightLabel.style.fontWeight = '500';
-            darkLabel.style.color = '#666';
-            darkLabel.style.fontWeight = 'normal';
-        }
+const lightLabel = document.querySelector('.theme-label.light');
+const darkLabel = document.querySelector('.theme-label.dark');
+
+if (lightLabel && darkLabel) {
+    if (isDark) {
+        lightLabel.style.color = '#aaa';
+        lightLabel.style.fontWeight = 'normal';
+        darkLabel.style.color = '#87CEEB';
+        darkLabel.style.fontWeight = '500';
+    } else {
+        lightLabel.style.color = '#3f51b5';
+        lightLabel.style.fontWeight = '500';
+        darkLabel.style.color = '#666';
+        darkLabel.style.fontWeight = 'normal';
     }
+}
 }
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - SCool инициализация для Railway');
-    
-    // Инициализация темы
-    const themeToggle = document.getElementById('theme-toggle');
-    if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (themeToggle) themeToggle.checked = true;
-        updateThemeLabels(true);
-    } else {
-        updateThemeLabels(false);
-    }
-    
-    // Инициализация приложения
-    initApp();
-    
-    // Начальное состояние макетов
-    document.getElementById('desktop9-layout').style.display = 'none';
-    document.getElementById('desktop10-layout').style.display = 'none';
-    document.getElementById('desktop11-layout').style.display = 'none';
-    document.getElementById('standard-layout').style.display = 'flex';
-    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+console.log('DOMContentLoaded - SCool инициализация для Railway');
+
+// Инициализация темы
+const themeToggle = document.getElementById('theme-toggle');
+if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark-theme');
+    if (themeToggle) themeToggle.checked = true;
+    updateThemeLabels(true);
+} else {
+    updateThemeLabels(false);
+}
+
+// Инициализация приложения
+initApp();
+
+// Начальное состояние макетов
+document.getElementById('desktop9-layout').style.display = 'none';
+document.getElementById('desktop10-layout').style.display = 'none';
+document.getElementById('desktop11-layout').style.display = 'none';
+document.getElementById('standard-layout').style.display = 'flex';
+document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
 });
 
 // Дополнительная защита от английских названий
 function forceRussianTitles() {
-    const replacements = {
-        'Physics': 'Физика',
-        'physics': 'Физика',
-        'PHYSICS': 'Физика',
-        'Mathematics': 'Математика',
-        'Math': 'Математика',
-        'Chemistry': 'Химия',
-        'Biology': 'Биология',
-        'Algebra': 'Алгебра',
-        'Geometry': 'Геометрия',
-        'Computer Science': 'Информатика',
-        'Informatics': 'Информатика'
-    };
-    
-    document.querySelectorAll('.subject-card h3').forEach(title => {
-        const currentText = title.textContent.trim();
-        if (currentText === '' || replacements[currentText]) {
-            const newText = replacements[currentText] || 'Физика';
-            if (currentText !== newText) {
-                console.log(`Исправляем: "${currentText}" → "${newText}"`);
-                title.textContent = newText;
-            }
+const replacements = {
+    'Physics': 'Физика',
+    'physics': 'Физика',
+    'PHYSICS': 'Физика',
+    'Mathematics': 'Математика',
+    'Math': 'Математика',
+    'Chemistry': 'Химия',
+    'Biology': 'Биология',
+    'Algebra': 'Алгебра',
+    'Geometry': 'Геометрия',
+    'Computer Science': 'Информатика',
+    'Informatics': 'Информатика'
+};
+
+document.querySelectorAll('.subject-card h3').forEach(title => {
+    const currentText = title.textContent.trim();
+    if (currentText === '' || replacements[currentText]) {
+        const newText = replacements[currentText] || 'Физика';
+        if (currentText !== newText) {
+            console.log(`Исправляем: "${currentText}" → "${newText}"`);
+            title.textContent = newText;
         }
-    });
+    }
+});
 }
 
 // Запускаем проверку
