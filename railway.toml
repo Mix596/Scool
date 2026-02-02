@@ -1,8 +1,15 @@
 [build]
 builder = "nixpacks"
 buildCommand = "npm install"
-startCommand = "npm start"
+buildTimeout = 600
 
 [deploy]
-healthcheckPath = "/health"
+startCommand = "node server.js"
+healthcheckPath = "/api/health"
 healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+
+[[services]]
+name = "scool-api"
+port = 3000
+protocol = "http"
