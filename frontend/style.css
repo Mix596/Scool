@@ -1,910 +1,1128 @@
-// ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
-const getApiBaseUrl = () => {
-    if (window.location.hostname.includes('railway') || 
-        window.location.hostname.includes('vercel') ||
-        window.location.hostname.includes('netlify')) {
-        return window.location.origin;
+/* ==================== ОСНОВНЫЕ СТИЛИ ==================== */
+
+:root {
+    /* Цвета светлой темы */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f7;
+    --bg-card: #ffffff;
+    --text-primary: #1d1d1f;
+    --text-secondary: #515154;
+    --text-muted: #86868b;
+    --border-color: #d2d2d7;
+    --accent-color: #3f51b5;
+    --accent-light: #5c6bc0;
+    --accent-hover: #3949ab;
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --error-color: #f44336;
+    --info-color: #2196f3;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --transition: all 0.3s ease;
+}
+
+.dark-theme {
+    /* Цвета темной темы */
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-card: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6d6d6d;
+    --border-color: #404040;
+    --accent-color: #7986cb;
+    --accent-light: #8c9eff;
+    --accent-hover: #5c6bc0;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding-bottom: 20px;
+}
+
+/* ==================== ШАПКА ==================== */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background-color: var(--bg-card);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.logo i {
+    font-size: 32px;
+    color: var(--accent-color);
+}
+
+.version {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 8px;
+}
+
+.search-bar {
+    position: relative;
+    flex: 1;
+    max-width: 500px;
+    margin: 0 24px;
+}
+
+.search-bar i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    z-index: 1;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 14px 20px 14px 48px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 16px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-top: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+}
+
+.search-results.show {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.search-result-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.result-icon {
+    font-size: 20px;
+    color: var(--accent-color);
+    margin-right: 16px;
+    width: 24px;
+    text-align: center;
+}
+
+.result-text {
+    flex: 1;
+}
+
+.result-text div {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.result-text small {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.result-type {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.search-no-results {
+    padding: 32px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.search-no-results i {
+    font-size: 24px;
+    margin-bottom: 12px;
+    display: block;
+    color: var(--text-muted);
+}
+
+.highlight {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: var(--text-primary);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.header-icons {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.theme-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.theme-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 28px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, #4CAF50 0%, #2196F3 100%);
+    transition: var(--transition);
+    border-radius: 34px;
+}
+
+.theme-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: var(--transition);
+    border-radius: 50%;
+}
+
+.theme-switch input:checked + .theme-slider:before {
+    transform: translateX(28px);
+}
+
+.theme-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: white;
+    z-index: 1;
+}
+
+.theme-icon.moon {
+    left: 8px;
+}
+
+.theme-icon.sun {
+    right: 8px;
+}
+
+.header-icons i {
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 8px;
+    border-radius: 50%;
+}
+
+.header-icons i:hover {
+    color: var(--accent-color);
+    background-color: var(--bg-secondary);
+    transform: scale(1.1);
+}
+
+/* ==================== ОСНОВНОЙ КОНТЕНТ ==================== */
+
+.main-content {
+    display: flex;
+    gap: 24px;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.left-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.right-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.class-selection {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.class-btn {
+    flex: 1;
+    padding: 16px;
+    background-color: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.class-btn:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.class-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow);
+}
+
+/* ==================== КАРТОЧКИ И СЕКЦИИ ==================== */
+
+.card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+.section-block {
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+}
+
+.section-block h2 {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.section-title-with-date {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.date {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.learning-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.learning-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.card-header span {
+    font-size: 14px;
+    color: var(--text-secondary);
+    background-color: var(--bg-secondary);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.progress-container {
+    height: 8px;
+    background-color: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-color), var(--accent-light));
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* ==================== ДОСТИЖЕНИЯ ==================== */
+
+.achievements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.achievement-info {
+    flex: 1;
+}
+
+.achievement-info h3 {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.date-value {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* ==================== ЛИДЕРБОРД ==================== */
+
+.leaderboard h3 {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.leader-list {
+    list-style: none;
+    margin-bottom: 20px;
+}
+
+.leader-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.leader-item:hover {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.leader-item:last-child {
+    border-bottom: none;
+}
+
+.rank {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    min-width: 24px;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+}
+
+.name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.score {
+    font-weight: 700;
+    color: var(--accent-color);
+    font-size: 16px;
+}
+
+.btn {
+    padding: 12px 24px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* ==================== РЕКЛАМА ==================== */
+
+.advertisement {
+    text-align: center;
+    margin-top: 24px;
+}
+
+.advertisement h3 {
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    font-size: 18px;
+}
+
+.advertisement p {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ==================== МАКЕТЫ ДЛЯ КЛАССОВ ==================== */
+
+.desktop9-section,
+.desktop10-section,
+.desktop11-section,
+.standard-section {
+    display: none;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.desktop9-section.active,
+.desktop10-section.active,
+.desktop11-section.active,
+.standard-section.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.desktop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.desktop-home-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.desktop-home-link:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.subject-card {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-light));
+    color: white;
+    padding: 32px;
+    border-radius: var(--radius);
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.subject-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+}
+
+.subject-card h3 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.subject-card p {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* ==================== КНОПКИ "НАПИСАТЬ НАМ" ==================== */
+
+.desktop-contact-us,
+.standard-contact-us {
+    margin-top: 20px;
+}
+
+.desktop-contact-btn,
+.standard-contact-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.desktop-contact-btn:hover,
+.standard-contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+/* ==================== ЦЕНТРАЛЬНОЕ СООБЩЕНИЕ ==================== */
+
+.center-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-hover);
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    min-width: 300px;
+    max-width: 400px;
+    border: 2px solid var(--border-color);
+}
+
+.center-message.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.center-message-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+.center-message-icon {
+    font-size: 24px;
+    color: var(--accent-color);
+}
+
+.center-message-text {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.center-message-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: var(--error-color);
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: var(--transition);
+}
+
+.center-message-close:hover {
+    transform: scale(1.1);
+}
+
+/* ==================== МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ ==================== */
+
+.auth-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.auth-modal.show {
+    display: flex;
+    opacity: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-modal-content {
+    background-color: var(--bg-card);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 400px;
+    padding: 32px;
+    position: relative;
+    box-shadow: var(--shadow-hover);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.auth-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.auth-close:hover {
+    color: var(--error-color);
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.auth-tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.auth-tab-btn.active {
+    color: var(--accent-color);
+}
+
+.auth-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--accent-color);
+}
+
+.auth-form {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auth-form.active {
+    display: flex;
+}
+
+.auth-input-group {
+    position: relative;
+}
+
+.auth-input-group i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    z-index: 1;
+}
+
+.auth-input-group input,
+.auth-input-group select {
+    width: 100%;
+    padding: 14px 20px 14px 48px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.auth-input-group select {
+    appearance: none;
+    cursor: pointer;
+}
+
+.auth-input-group input:focus,
+.auth-input-group select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
+}
+
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.auth-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.auth-checkbox input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-color);
+}
+
+.auth-forgot {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 14px;
+    transition: var(--transition);
+}
+
+.auth-forgot:hover {
+    text-decoration: underline;
+}
+
+.auth-submit-btn {
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-light));
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 8px;
+}
+
+.auth-submit-btn:hover {
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.auth-message {
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.auth-message.error {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: var(--error-color);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.auth-message.success {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.auth-message.info {
+    background-color: rgba(33, 150, 243, 0.1);
+    color: var(--info-color);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+/* ==================== АНИМАЦИИ ==================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==================== АДАПТИВНОСТЬ ==================== */
+
+@media (max-width: 1024px) {
+    .main-content {
+        flex-direction: column;
     }
     
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:3000';
+    .right-sidebar {
+        width: 100%;
     }
     
-    return window.location.origin;
-};
-
-const API_BASE_URL = getApiBaseUrl();
-console.log('🌐 API Base URL:', API_BASE_URL);
-
-const CONFIG = {
-    API_BASE_URL: API_BASE_URL,
-    FALLBACK_DATA: {
-        SEARCH: [
-            {
-                title: "Физика - 7 класс",
-                description: "Изучение основ физики",
-                type: "Предмет",
-                icon: "fas fa-atom",
-                keywords: "физика наука 7 класс механика движение"
-            },
-            {
-                title: "Таблица лидеров",
-                description: "Топ учеников по баллам",
-                type: "Рейтинг",
-                icon: "fas fa-chart-line",
-                keywords: "лидеры турнир рейтинг таблица баллы"
-            },
-            {
-                title: "Написать нам",
-                description: "Свяжитесь с поддержкой SCool",
-                type: "Поддержка",
-                icon: "fas fa-envelope",
-                keywords: "написать нам поддержка помощь обратная связь"
-            }
-        ],
-        LEADERBOARD: [
-            { name: 'Елена Васильева', score: 1200, class: 9, rank: 1 },
-            { name: 'Василий Петров', score: 1000, class: 8, rank: 2 },
-            { name: 'Евгений Сидоров', score: 900, class: 7, rank: 3 },
-            { name: 'Мария Козлова', score: 850, class: 9, rank: 4 },
-            { name: 'Алексей Тихонов', score: 800, class: 8, rank: 5 }
-        ]
-    }
-};
-
-let currentUser = null;
-let isAuthenticated = false;
-
-// ==================== API ФУНКЦИИ ====================
-
-async function apiRequest(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
-    };
-    
-    try {
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error(`❌ API Error (${endpoint}):`, error.message);
-        
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            showCenterMessage('Ошибка подключения к серверу', 'fa-wifi');
-        }
-        
-        throw error;
+    .learning-cards {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
 }
 
-async function loadServerData() {
-    try {
-        try {
-            const leaderboard = await apiRequest('/api/leaderboard');
-            if (leaderboard && Array.isArray(leaderboard)) {
-                updateAllLeaderboards(leaderboard);
-                console.log('✅ Leaderboard loaded from server');
-            }
-        } catch (error) {
-            console.log('Using fallback leaderboard');
-            updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
-        }
-        
-        if (currentUser && currentUser.class_number) {
-            try {
-                const subjects = await apiRequest(`/api/subjects/${currentUser.class_number}`);
-                if (subjects && Array.isArray(subjects)) {
-                    updateSubjectsFromServer(subjects);
-                    console.log('✅ Subjects loaded from server');
-                }
-            } catch (error) {
-                console.log('Using fallback subjects');
-            }
-        }
-        
-    } catch (error) {
-        console.error('Error loading server data:', error);
-        useFallbackData();
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+    }
+    
+    .search-bar {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+    }
+    
+    .header-icons {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .class-selection {
+        flex-direction: column;
+    }
+    
+    .auth-modal-content {
+        margin: 20px;
+        padding: 24px;
     }
 }
 
-function updateSubjectsFromServer(subjectsData) {
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+@media (max-width: 480px) {
+    .main-content {
+        padding: 16px;
+    }
     
-    layouts.forEach(layoutId => {
-        const layout = document.getElementById(layoutId);
-        if (layout) {
-            const subjectCards = layout.querySelectorAll('.subject-card');
-            subjectCards.forEach((card, index) => {
-                if (subjectsData[index]) {
-                    const titleElement = card.querySelector('h3');
-                    if (titleElement) {
-                        titleElement.textContent = subjectsData[index].name || 'Физика';
-                    }
-                    
-                    const classElement = card.querySelector('p');
-                    if (classElement) {
-                        classElement.textContent = `${subjectsData[index].class_number || 7} класс`;
-                    }
-                }
-            });
-        }
-    });
-}
-
-// ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
-
-async function initApp() {
-    console.log('🚀 Инициализация SCool...');
+    .learning-cards {
+        grid-template-columns: 1fr;
+    }
     
-    try {
-        checkUserSession();
-        setupEventListeners();
-        initializeAllLayouts();
-        
-        await loadServerData();
-        
-        console.log('✅ Приложение успешно инициализировано');
-    } catch (error) {
-        console.error('❌ Ошибка инициализации:', error);
-        useFallbackData();
+    .auth-modal-content {
+        padding: 20px;
+    }
+    
+    .center-message {
+        left: 16px;
+        right: 16px;
+        transform: translateX(0) translateY(-100px);
+        max-width: none;
+    }
+    
+    .center-message.show {
+        transform: translateX(0) translateY(0);
     }
 }
 
-function checkUserSession() {
-    const savedUser = localStorage.getItem('scool_user');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            isAuthenticated = true;
-            updateUserInterface();
-            console.log('👤 Пользователь авторизован:', currentUser);
-        } catch (e) {
-            console.error('❌ Ошибка парсинга данных пользователя:', e);
-            logoutUser();
-        }
-    }
+/* ==================== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ==================== */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-function updateUserInterface() {
-    const profileBtn = document.getElementById('profile-btn');
-    if (profileBtn && currentUser) {
-        profileBtn.title = currentUser.name || 'Профиль';
-        profileBtn.style.color = '#4CAF50';
-    }
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
 }
 
-function initializeAllLayouts() {
-    console.log('📊 Инициализация всех макетов...');
-    
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
-    
-    layouts.forEach(layoutId => {
-        const layout = document.getElementById(layoutId);
-        if (layout) {
-            initializePhysicsSubjects(layout, layoutId);
-        }
-    });
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
 }
 
-function initializePhysicsSubjects(layout, layoutId) {
-    let classNumber;
-    
-    switch(layoutId) {
-        case 'desktop9-layout':
-            classNumber = 7;
-            break;
-        case 'desktop10-layout':
-            classNumber = 8;
-            break;
-        case 'desktop11-layout':
-            classNumber = 9;
-            break;
-        default:
-            classNumber = currentUser ? currentUser.class_number : 7;
-    }
-    
-    const subjectCards = layout.querySelectorAll('.subject-card');
-    
-    subjectCards.forEach((card, index) => {
-        const titleElement = card.querySelector('h3');
-        if (titleElement) {
-            titleElement.textContent = 'Физика';
-        }
-        
-        const classElement = card.querySelector('p');
-        if (classElement) {
-            classElement.textContent = `${classNumber} класс`;
-        }
-    });
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
 }
 
-function updateAllLeaderboards(leaderboardData) {
-    const leaderboardList = document.getElementById('leaderboard-list');
-    if (!leaderboardList) return;
-    
-    leaderboardList.innerHTML = '';
-    
-    leaderboardData.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.className = 'leader-item';
-        
-        const firstLetter = (item.name || 'У').charAt(0).toUpperCase();
-        const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
-        const color = colors[index % colors.length];
-        
-        li.innerHTML = `
-            <span class="rank">${item.rank || index + 1}</span>
-            <div class="avatar" style="background-color: ${color}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 30px; height: 30px; font-weight: bold;">
-                ${firstLetter}
-            </div>
-            <span class="name">${item.name || `Ученик ${index + 1}`}</span>
-            <span class="score">${item.score || 0}</span>
-        `;
-        
-        leaderboardList.appendChild(li);
-    });
+::selection {
+    background-color: var(--accent-color);
+    color: white;
 }
 
-function useFallbackData() {
-    console.log('📦 Используем резервные данные...');
-    updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+input, button, select {
+    font-family: inherit;
 }
 
-// ==================== АВТОРИЗАЦИЯ ====================
-
-function openAuthModal() {
-    const authModal = document.getElementById('auth-modal');
-    if (authModal) {
-        authModal.classList.add('show');
-        document.body.style.overflow = 'hidden';
-        switchAuthTab('login');
-        clearAuthMessages();
-    }
+a {
+    color: var(--accent-color);
+    text-decoration: none;
 }
 
-function closeAuthModal() {
-    const authModal = document.getElementById('auth-modal');
-    if (authModal) {
-        authModal.classList.remove('show');
-        document.body.style.overflow = '';
-        clearAuthForms();
-    }
+a:hover {
+    text-decoration: underline;
 }
 
-function switchAuthTab(tabName) {
-    const tabs = document.querySelectorAll('.auth-tab-btn');
-    const forms = document.querySelectorAll('.auth-form');
-    
-    tabs.forEach(tab => tab.classList.remove('active'));
-    forms.forEach(form => form.classList.remove('active'));
-    
-    const activeTab = document.querySelector(`.auth-tab-btn[data-tab="${tabName}"]`);
-    const activeForm = document.getElementById(`${tabName}-form`);
-    
-    if (activeTab) activeTab.classList.add('active');
-    if (activeForm) activeForm.classList.add('active');
-    
-    clearAuthMessages();
+/* ==================== УТИЛИТЫ ==================== */
+
+.text-center {
+    text-align: center;
 }
 
-function clearAuthForms() {
-    document.getElementById('login-form')?.reset();
-    document.getElementById('register-form')?.reset();
-    clearAuthMessages();
+.text-muted {
+    color: var(--text-muted);
 }
 
-function clearAuthMessages() {
-    const messages = document.querySelectorAll('.auth-message');
-    messages.forEach(msg => msg.remove());
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-5 { margin-top: 20px; }
+
+.mb-1 { margin-bottom: 4px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-5 { margin-bottom: 20px; }
+
+.hidden {
+    display: none !important;
 }
-
-function showAuthMessage(message, type = 'error') {
-    clearAuthMessages();
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `auth-message ${type}`;
-    messageDiv.textContent = message;
-    messageDiv.style.display = 'block';
-    
-    const activeForm = document.querySelector('.auth-form.active');
-    if (activeForm) {
-        activeForm.insertBefore(messageDiv, activeForm.firstChild);
-        
-        if (type === 'success') {
-            setTimeout(() => {
-                if (messageDiv.parentNode) {
-                    messageDiv.remove();
-                }
-            }, 3000);
-        }
-    }
-}
-
-async function handleLogin(event) {
-    event.preventDefault();
-    
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    const rememberMe = document.getElementById('remember-me').checked;
-    
-    if (!email || !password) {
-        showAuthMessage('Заполните все поля', 'error');
-        return;
-    }
-    
-    if (!validateEmail(email)) {
-        showAuthMessage('Введите корректный email', 'error');
-        return;
-    }
-    
-    try {
-        showAuthMessage('Выполняется вход...', 'info');
-        
-        const response = await apiRequest('/api/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-        
-        if (!response.success) {
-            throw new Error(response.message || 'Ошибка входа');
-        }
-        
-        const user = {
-            id: response.user?.id || Date.now(),
-            email: email,
-            name: response.user?.name || email.split('@')[0],
-            class_number: response.user?.class_number || 7,
-            remember_me: rememberMe,
-            token: response.token
-        };
-        
-        saveUserSession(user, rememberMe);
-        
-        showAuthMessage('Вход выполнен успешно!', 'success');
-        
-        setTimeout(() => {
-            closeAuthModal();
-            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
-            updateUserInterface();
-            loadServerData();
-        }, 1500);
-        
-    } catch (error) {
-        showAuthMessage(error.message || 'Ошибка входа', 'error');
-    }
-}
-
-async function handleRegister(event) {
-    event.preventDefault();
-    
-    const name = document.getElementById('register-name').value.trim();
-    const email = document.getElementById('register-email').value.trim();
-    const password = document.getElementById('register-password').value;
-    const passwordConfirm = document.getElementById('register-password-confirm').value;
-    const classNumber = document.getElementById('register-class').value;
-    
-    if (!name || !email || !password || !passwordConfirm || !classNumber) {
-        showAuthMessage('Заполните все поля', 'error');
-        return;
-    }
-    
-    if (!validateEmail(email)) {
-        showAuthMessage('Введите корректный email', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showAuthMessage('Пароль должен быть не менее 6 символов', 'error');
-        return;
-    }
-    
-    if (password !== passwordConfirm) {
-        showAuthMessage('Пароли не совпадают', 'error');
-        return;
-    }
-    
-    try {
-        showAuthMessage('Регистрация...', 'info');
-        
-        const response = await apiRequest('/api/register', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                email, 
-                password, 
-                fullName: name, 
-                classNumber: parseInt(classNumber) 
-            })
-        });
-        
-        if (!response.success) {
-            throw new Error(response.message || 'Ошибка регистрации');
-        }
-        
-        const user = {
-            id: response.user?.id || Date.now(),
-            email: email,
-            name: name,
-            class_number: parseInt(classNumber),
-            token: response.token
-        };
-        
-        saveUserSession(user, true);
-        
-        showAuthMessage('Регистрация прошла успешно!', 'success');
-        
-        setTimeout(() => {
-            closeAuthModal();
-            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
-            updateUserInterface();
-            loadServerData();
-        }, 1500);
-        
-    } catch (error) {
-        showAuthMessage(error.message || 'Ошибка регистрации', 'error');
-    }
-}
-
-function saveUserSession(user, rememberMe = true) {
-    currentUser = user;
-    isAuthenticated = true;
-    
-    if (rememberMe) {
-        localStorage.setItem('scool_user', JSON.stringify(user));
-    } else {
-        sessionStorage.setItem('scool_user', JSON.stringify(user));
-    }
-}
-
-function logoutUser() {
-    currentUser = null;
-    isAuthenticated = false;
-    localStorage.removeItem('scool_user');
-    sessionStorage.removeItem('scool_user');
-    
-    showCenterMessage('Вы вышли из системы', 'fa-sign-out-alt');
-    updateUserInterface();
-    useFallbackData();
-}
-
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-}
-
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-
-function showProfileMenu() {
-    const menu = document.createElement('div');
-    menu.className = 'profile-menu';
-    menu.style.cssText = `
-        position: absolute;
-        top: 60px;
-        right: 30px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        padding: 15px;
-        min-width: 200px;
-        z-index: 1000;
-    `;
-    
-    menu.innerHTML = `
-        <div style="padding: 10px; border-bottom: 1px solid #eee;">
-            <strong>${currentUser.name}</strong>
-            <div style="color: #666; font-size: 0.9em;">${currentUser.email}</div>
-            <div style="color: #888; font-size: 0.8em;">Класс: ${currentUser.class_number}</div>
-        </div>
-        <button id="logout-btn" style="width: 100%; padding: 10px; margin-top: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            <i class="fas fa-sign-out-alt"></i> Выйти
-        </button>
-    `;
-    
-    document.body.appendChild(menu);
-    
-    document.getElementById('logout-btn').addEventListener('click', function() {
-        logoutUser();
-        menu.remove();
-    });
-    
-    setTimeout(() => {
-        document.addEventListener('click', function closeMenu(e) {
-            if (!menu.contains(e.target) && e.target.id !== 'profile-btn') {
-                menu.remove();
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }, 100);
-}
-
-function showEmailMessage(email) {
-    showCenterMessage(`Напишите нам на: ${email}`, 'fa-envelope');
-}
-
-function showCenterMessage(message, icon = 'fa-info-circle') {
-    const messageElement = document.getElementById('center-message');
-    const messageText = document.getElementById('center-message-text');
-    const messageIcon = document.getElementById('center-message-icon');
-    
-    if (messageElement && messageText && messageIcon) {
-        messageText.textContent = message;
-        messageIcon.className = `fas ${icon}`;
-        messageElement.classList.add('show');
-        
-        setTimeout(() => {
-            messageElement.classList.remove('show');
-        }, 3000);
-    }
-}
-
-function hideCenterMessage() {
-    const messageElement = document.getElementById('center-message');
-    if (messageElement) {
-        messageElement.classList.remove('show');
-    }
-}
-
-function switchLayout(classNumber) {
-    hideAllLayouts();
-    
-    const layoutId = getLayoutIdByClass(classNumber);
-    const layout = document.getElementById(layoutId);
-    
-    if (layout) {
-        layout.style.display = 'flex';
-        layout.classList.add('active');
-    }
-    
-    updateActiveClassButton(classNumber);
-}
-
-function getLayoutIdByClass(classNumber) {
-    switch(classNumber) {
-        case '7': return 'desktop9-layout';
-        case '8': return 'desktop10-layout';
-        case '9': return 'desktop11-layout';
-        default: return 'standard-layout';
-    }
-}
-
-function hideAllLayouts() {
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
-    
-    layouts.forEach(layoutId => {
-        const layout = document.getElementById(layoutId);
-        if (layout) {
-            layout.style.display = 'none';
-            layout.classList.remove('active');
-        }
-    });
-}
-
-function updateActiveClassButton(selectedClass) {
-    document.querySelectorAll('.class-btn').forEach(button => {
-        if (button.getAttribute('data-class') === selectedClass) {
-            button.classList.add('active');
-        } else {
-            button.classList.remove('active');
-        }
-    });
-}
-
-function getActiveLayout() {
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
-    
-    for (const layoutId of layouts) {
-        const layout = document.getElementById(layoutId);
-        if (layout && layout.style.display !== 'none') {
-            return layout;
-        }
-    }
-    return null;
-}
-
-function goToHome() {
-    hideAllLayouts();
-    document.getElementById('standard-layout').style.display = 'flex';
-    document.getElementById('standard-layout').classList.add('active');
-    
-    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelector('.class-btn[data-class="7"]')?.classList.add('active');
-}
-
-function highlightText(text, searchTerm) {
-    if (!searchTerm || searchTerm.length < 2) return text;
-    
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
-}
-
-function updateThemeLabels(isDark) {
-    const lightLabel = document.querySelector('.theme-label.light');
-    const darkLabel = document.querySelector('.theme-label.dark');
-    
-    if (lightLabel && darkLabel) {
-        if (isDark) {
-            lightLabel.style.color = '#aaa';
-            lightLabel.style.fontWeight = 'normal';
-            darkLabel.style.color = '#87CEEB';
-            darkLabel.style.fontWeight = '500';
-        } else {
-            lightLabel.style.color = '#3f51b5';
-            lightLabel.style.fontWeight = '500';
-            darkLabel.style.color = '#666';
-            darkLabel.style.fontWeight = 'normal';
-        }
-    }
-}
-
-// ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
-
-function setupEventListeners() {
-    // Переключение темы
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('change', function() {
-            if (this.checked) {
-                document.body.classList.add('dark-theme');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                document.body.classList.remove('dark-theme');
-                localStorage.setItem('theme', 'light');
-            }
-            updateThemeLabels(this.checked);
-        });
-    }
-    
-    // Переключение классов
-    document.querySelectorAll('.class-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const selectedClass = this.getAttribute('data-class');
-            switchLayout(selectedClass);
-            
-            if (currentUser) {
-                currentUser.class_number = parseInt(selectedClass);
-                localStorage.setItem('scool_user', JSON.stringify(currentUser));
-            }
-            
-            const layoutId = getLayoutIdByClass(selectedClass);
-            const layout = document.getElementById(layoutId);
-            if (layout) {
-                if (isAuthenticated) {
-                    loadSubjectsForClass(selectedClass);
-                } else {
-                    initializePhysicsSubjects(layout, layoutId);
-                }
-            }
-        });
-    });
-    
-    // Поиск
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            const searchTerm = this.value.trim();
-            
-            if (searchTerm.length < 2) {
-                document.getElementById('search-results').classList.remove('show');
-                return;
-            }
-            
-            searchTimeout = setTimeout(() => {
-                performSearch(searchTerm);
-            }, 300);
-        });
-        
-        document.addEventListener('click', function(event) {
-            const searchResults = document.getElementById('search-results');
-            if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
-                searchResults.classList.remove('show');
-            }
-        });
-    }
-    
-    // Кнопки
-    document.getElementById('full-table-btn')?.addEventListener('click', function() {
-        showCenterMessage('Функция "Лидеры турнира" в разработке!', 'fa-trophy');
-    });
-    
-    document.getElementById('notification-btn')?.addEventListener('click', function() {
-        if (!isAuthenticated) {
-            openAuthModal();
-        } else {
-            showCenterMessage('Функция "Уведомления" в разработке!', 'fa-bell');
-        }
-    });
-    
-    document.getElementById('profile-btn')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        if (isAuthenticated && currentUser) {
-            showProfileMenu();
-        } else {
-            openAuthModal();
-        }
-    });
-    
-    // Кнопки "Написать нам"
-    document.querySelectorAll('.mail-button').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const email = this.getAttribute('data-email');
-            showEmailMessage(email);
-        });
-    });
-    
-    // Кнопки "На главную"
-    document.getElementById('home-from-desktop9')?.addEventListener('click', goToHome);
-    document.getElementById('home-from-desktop10')?.addEventListener('click', goToHome);
-    document.getElementById('home-from-desktop11')?.addEventListener('click', goToHome);
-    
-    // Кнопка закрытия центральной плашки
-    document.getElementById('close-center-message')?.addEventListener('click', hideCenterMessage);
-    
-    // Модальное окно авторизации
-    document.querySelector('.auth-close')?.addEventListener('click', closeAuthModal);
-    
-    document.getElementById('auth-modal')?.addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAuthModal();
-        }
-    });
-    
-    document.querySelectorAll('.auth-tab-btn').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            switchAuthTab(tabName);
-        });
-    });
-    
-    document.getElementById('login-form')?.addEventListener('submit', handleLogin);
-    document.getElementById('register-form')?.addEventListener('submit', handleRegister);
-    
-    document.querySelector('.auth-forgot')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        showCenterMessage('Функция восстановления пароля в разработке!', 'fa-key');
-    });
-    
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeAuthModal();
-        }
-    });
-}
-
-async function loadSubjectsForClass(classNumber) {
-    try {
-        const subjects = await apiRequest(`/api/subjects/${classNumber}`);
-        if (subjects && Array.isArray(subjects)) {
-            const layoutId = getLayoutIdByClass(classNumber);
-            const layout = document.getElementById(layoutId);
-            if (layout) {
-                const subjectCards = layout.querySelectorAll('.subject-card');
-                subjectCards.forEach((card, index) => {
-                    if (subjects[index]) {
-                        const titleElement = card.querySelector('h3');
-                        if (titleElement) {
-                            titleElement.textContent = subjects[index].name || 'Физика';
-                        }
-                        
-                        const classElement = card.querySelector('p');
-                        if (classElement) {
-                            classElement.textContent = `${classNumber} класс`;
-                        }
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.log('Using fallback subjects for class', classNumber);
-    }
-}
-
-async function performSearch(searchTerm) {
-    try {
-        const results = await apiRequest(`/api/search?q=${encodeURIComponent(searchTerm)}`);
-        displaySearchResults(results, searchTerm);
-    } catch (error) {
-        const localResults = CONFIG.FALLBACK_DATA.SEARCH.filter(item => 
-            item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        displaySearchResults(localResults, searchTerm);
-    }
-}
-
-function displaySearchResults(results, searchTerm) {
-    const searchResults = document.getElementById('search-results');
-    const searchInput = document.getElementById('search-input');
-    if (!searchResults) return;
-    
-    searchResults.innerHTML = '';
-    
-    if (results.length === 0) {
-        const noResults = document.createElement('div');
-        noResults.className = 'search-no-results';
-        noResults.innerHTML = '<i class="fas fa-search"></i> ничего не найдено';
-        searchResults.appendChild(noResults);
-    } else {
-        results.forEach(item => {
-            const resultItem = document.createElement('div');
-            resultItem.className = 'search-result-item';
-            
-            resultItem.innerHTML = `
-                <i class="${item.icon || 'fas fa-search'} result-icon"></i>
-                <div class="result-text">
-                    <div>${highlightText(item.title, searchTerm)}</div>
-                    <small>${highlightText(item.description, searchTerm)}</small>
-                </div>
-                <span class="result-type">${item.type}</span>
-            `;
-            
-            resultItem.addEventListener('click', function() {
-                searchResults.classList.remove('show');
-                if (searchInput) searchInput.value = '';
-                
-                if (item.type === 'Таблица лидеров') {
-                    document.querySelector('.leaderboard')?.scrollIntoView({ behavior: 'smooth' });
-                } else if (item.type === 'Написать нам') {
-                    const mailButtons = document.querySelectorAll('.mail-button');
-                    if (mailButtons.length > 0) {
-                        mailButtons[0].click();
-                    }
-                } else if (item.type === 'Предмет') {
-                    const activeLayout = getActiveLayout();
-                    if (activeLayout) {
-                        const subjectCards = activeLayout.querySelectorAll('.subject-card');
-                        if (subjectCards.length > 0) {
-                            subjectCards[0].scrollIntoView({ behavior: 'smooth' });
-                        }
-                    }
-                }
-            });
-            
-            searchResults.appendChild(resultItem);
-        });
-    }
-    
-    searchResults.classList.add('show');
-}
-
-// ==================== ИНИЦИАЛИЗАЦИЯ ====================
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - SCool инициализация');
-    
-    // Инициализация темы
-    const themeToggle = document.getElementById('theme-toggle');
-    if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (themeToggle) themeToggle.checked = true;
-        updateThemeLabels(true);
-    } else {
-        updateThemeLabels(false);
-    }
-    
-    // Инициализация приложения
-    initApp();
-    
-    // Начальное состояние макетов
-    document.getElementById('desktop9-layout').style.display = 'none';
-    document.getElementById('desktop10-layout').style.display = 'none';
-    document.getElementById('desktop11-layout').style.display = 'none';
-    document.getElementById('standard-layout').style.display = 'flex';
-    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
-});
