@@ -1001,6 +1001,80 @@ body.dark-theme .center-message-icon {
     transform: translateY(0);
 }
 
+/* Разделитель */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: #888;
+    font-size: 14px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #eee;
+}
+
+.auth-divider span {
+    padding: 0 15px;
+}
+
+/* Социальные кнопки */
+.auth-social {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.auth-social-btn {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.auth-social-btn.google {
+    color: #DB4437;
+    border-color: #ddd;
+}
+
+.auth-social-btn.google:hover {
+    background-color: #f8f8f8;
+    border-color: #DB4437;
+}
+
+.auth-social-btn.vk {
+    color: #4C75A3;
+    border-color: #ddd;
+}
+
+.auth-social-btn.vk:hover {
+    background-color: #f8f8f8;
+    border-color: #4C75A3;
+}
+
+/* Ссылка на условия */
+.auth-link {
+    color: #3f51b5;
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
 /* Сообщения об ошибках и успехе */
 .auth-message {
     padding: 12px;
@@ -1091,6 +1165,26 @@ body.dark-theme .auth-submit-btn:hover {
     background: linear-gradient(135deg, #4a5568, #2d3748);
 }
 
+body.dark-theme .auth-divider {
+    color: #aaa;
+}
+
+body.dark-theme .auth-divider::before,
+body.dark-theme .auth-divider::after {
+    background-color: #333;
+}
+
+body.dark-theme .auth-social-btn {
+    background-color: #2d2d2d;
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+body.dark-theme .auth-social-btn:hover {
+    background-color: #333;
+    border-color: #444;
+}
+
 body.dark-theme .auth-message.error {
     background-color: #2d1b1b;
     color: #ff8a80;
@@ -1125,6 +1219,10 @@ body.dark-theme .auth-message.success {
         width: 3px;
         left: 0;
         border-radius: 3px 0 0 3px;
+    }
+    
+    .auth-social {
+        flex-direction: column;
     }
 }
 
