@@ -1,16 +1,18 @@
 // ==================== КОНФИГУРАЦИЯ ДЛЯ RAILWAY ====================
+// Автоматически определяем URL для продакшена и разработки
 const getApiBaseUrl = () => {
-    if (window.location.hostname.includes('railway') || 
-        window.location.hostname.includes('vercel') ||
-        window.location.hostname.includes('netlify')) {
-        return window.location.origin;
-    }
-    
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:3000';
-    }
-    
+  // Если мы на Railway (продакшен)
+  if (window.location.hostname.includes('railway')) {
     return window.location.origin;
+  }
+  
+  // Если локальная разработка
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3000';
+  }
+  
+  // По умолчанию текущий origin
+  return window.location.origin;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -22,14 +24,14 @@ const CONFIG = {
         SEARCH: [
             {
                 title: "Физика - 7 класс",
-                description: "Изучение основ физики",
+                description: "14% завершено",
                 type: "Предмет",
                 icon: "fas fa-atom",
                 keywords: "физика наука 7 класс механика движение"
             },
             {
                 title: "Таблица лидеров",
-                description: "Топ учеников по баллам",
+                description: "Елена Васильева (1200), Василий Петров (1000), Евгений Сидоров (900)",
                 type: "Рейтинг",
                 icon: "fas fa-chart-line",
                 keywords: "лидеры турнир рейтинг таблица баллы"
@@ -42,12 +44,30 @@ const CONFIG = {
                 keywords: "написать нам поддержка помощь обратная связь"
             }
         ],
+        SUBJECTS_BY_CLASS: {
+            7: [
+                { name: 'Физика', progress_percent: 14, color: '#3f51b5' },
+                { name: 'Математика', progress_percent: 45, color: '#f44336' },
+                { name: 'Химия', progress_percent: 28, color: '#4caf50' },
+                { name: 'Биология', progress_percent: 32, color: '#ff9800' }
+            ],
+            8: [
+                { name: 'Физика', progress_percent: 22, color: '#3f51b5' },
+                { name: 'Алгебра', progress_percent: 51, color: '#f44336' },
+                { name: 'Геометрия', progress_percent: 38, color: '#4caf50' },
+                { name: 'Информатика', progress_percent: 67, color: '#ff9800' }
+            ],
+            9: [
+                { name: 'Физика', progress_percent: 58, color: '#3f51b5' },
+                { name: 'Математика', progress_percent: 72, color: '#f44336' },
+                { name: 'Химия', progress_percent: 41, color: '#4caf50' },
+                { name: 'Биология', progress_percent: 36, color: '#ff9800' }
+            ]
+        },
         LEADERBOARD: [
-            { name: 'Елена Васильева', score: 1200, class: 9, rank: 1 },
-            { name: 'Василий Петров', score: 1000, class: 8, rank: 2 },
-            { name: 'Евгений Сидоров', score: 900, class: 7, rank: 3 },
-            { name: 'Мария Козлова', score: 850, class: 9, rank: 4 },
-            { name: 'Алексей Тихонов', score: 800, class: 8, rank: 5 }
+            { full_name: 'Елена Васильева', score: 1200, class_number: 9 },
+            { full_name: 'Василий Петров', score: 1000, class_number: 8 },
+            { full_name: 'Евгений Сидоров', score: 900, class_number: 7 }
         ]
     }
 };
@@ -55,16 +75,34 @@ const CONFIG = {
 let currentUser = null;
 let isAuthenticated = false;
 
-// ==================== API ФУНКЦИИ ====================
+// ==================== API ФУНКЦИИ ДЛЯ RAILWAY ====================
 
+// Сохраняем токен
+function saveAuthToken(token) {
+    localStorage.setItem('scool_token', token);
+}
+
+function getAuthToken() {
+    return localStorage.getItem('scool_token');
+}
+
+function removeAuthToken() {
+    localStorage.removeItem('scool_token');
+}
+
+// Универсальный запрос к API
 async function apiRequest(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
     
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
     };
+    
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
     
     try {
         const response = await fetch(url, {
@@ -73,14 +111,24 @@ async function apiRequest(endpoint, options = {}) {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('API Error:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch {
+                errorData = { error: errorText || `HTTP ${response.status}` };
+            }
+            throw new Error(errorData.error || `Ошибка ${response.status}`);
         }
         
         return await response.json();
     } catch (error) {
         console.error(`❌ API Error (${endpoint}):`, error.message);
         
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        // Если ошибка сети
+        if (error.message.includes('Failed to fetch')) {
             showCenterMessage('Ошибка подключения к серверу', 'fa-wifi');
         }
         
@@ -88,12 +136,40 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
+// Проверка доступности сервера
+async function checkServerHealth() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (!response.ok) {
+            return false;
+        }
+        const data = await response.json();
+        return data.status === 'healthy' || data.status === 'OK';
+    } catch (error) {
+        console.warn('Health check failed:', error);
+        return false;
+    }
+}
+
+// Загрузка данных с сервера
 async function loadServerData() {
     try {
+        const isHealthy = await checkServerHealth();
+        if (!isHealthy) {
+            console.log('Server not available, using fallback data');
+            useFallbackData();
+            return;
+        }
+        
+        // Загружаем лидерборд
         try {
             const leaderboard = await apiRequest('/api/leaderboard');
             if (leaderboard && Array.isArray(leaderboard)) {
-                updateAllLeaderboards(leaderboard);
+                updateAllLeaderboards(leaderboard.map(item => ({
+                    full_name: item.name || item.full_name || 'Ученик',
+                    score: item.score || 0,
+                    class_number: item.class || item.class_number || 7
+                })));
                 console.log('✅ Leaderboard loaded from server');
             }
         } catch (error) {
@@ -101,6 +177,7 @@ async function loadServerData() {
             updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
         }
         
+        // Загружаем предметы если пользователь авторизован
         if (currentUser && currentUser.class_number) {
             try {
                 const subjects = await apiRequest(`/api/subjects/${currentUser.class_number}`);
@@ -119,6 +196,7 @@ async function loadServerData() {
     }
 }
 
+// Обновление предметов с сервера
 function updateSubjectsFromServer(subjectsData) {
     const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
     
@@ -133,9 +211,16 @@ function updateSubjectsFromServer(subjectsData) {
                         titleElement.textContent = subjectsData[index].name || 'Физика';
                     }
                     
-                    const classElement = card.querySelector('p');
-                    if (classElement) {
-                        classElement.textContent = `${subjectsData[index].class_number || 7} класс`;
+                    const progressFill = card.querySelector('.progress-fill');
+                    const progressText = card.querySelector('.progress-text');
+                    
+                    const progress = subjectsData[index].progress || subjectsData[index].progress_percent || 0;
+                    
+                    if (progressFill) {
+                        progressFill.style.width = `${progress}%`;
+                    }
+                    if (progressText) {
+                        progressText.textContent = `${progress}% завершено`;
                     }
                 }
             });
@@ -146,13 +231,16 @@ function updateSubjectsFromServer(subjectsData) {
 // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
 
 async function initApp() {
-    console.log('🚀 Инициализация SCool...');
+    console.log('🚀 Инициализация SCool для Railway...');
     
     try {
+        // Проверяем, есть ли сохраненная сессия
         checkUserSession();
+        
         setupEventListeners();
         initializeAllLayouts();
         
+        // Загружаем данные с сервера
         await loadServerData();
         
         console.log('✅ Приложение успешно инициализировано');
@@ -181,7 +269,7 @@ function updateUserInterface() {
     const profileBtn = document.getElementById('profile-btn');
     if (profileBtn && currentUser) {
         profileBtn.title = currentUser.name || 'Профиль';
-        profileBtn.style.color = '#4CAF50';
+        // Можно добавить аватар или другое отображение
     }
 }
 
@@ -193,6 +281,7 @@ function initializeAllLayouts() {
     layouts.forEach(layoutId => {
         const layout = document.getElementById(layoutId);
         if (layout) {
+            // Инициализируем с fallback данными
             initializePhysicsSubjects(layout, layoutId);
         }
     });
@@ -215,61 +304,90 @@ function initializePhysicsSubjects(layout, layoutId) {
             classNumber = currentUser ? currentUser.class_number : 7;
     }
     
+    const subjects = CONFIG.FALLBACK_DATA.SUBJECTS_BY_CLASS[classNumber] || CONFIG.FALLBACK_DATA.SUBJECTS_BY_CLASS[7];
     const subjectCards = layout.querySelectorAll('.subject-card');
     
     subjectCards.forEach((card, index) => {
-        const titleElement = card.querySelector('h3');
-        if (titleElement) {
-            titleElement.textContent = 'Физика';
-        }
-        
-        const classElement = card.querySelector('p');
-        if (classElement) {
-            classElement.textContent = `${classNumber} класс`;
+        if (subjects[index]) {
+            const titleElement = card.querySelector('h3');
+            if (titleElement) {
+                titleElement.textContent = subjects[index].name;
+            }
+            
+            const progressFill = card.querySelector('.progress-fill');
+            const progressText = card.querySelector('.progress-text');
+            
+            if (progressFill) {
+                progressFill.style.width = `${subjects[index].progress_percent}%`;
+            }
+            if (progressText) {
+                progressText.textContent = `${subjects[index].progress_percent}% завершено`;
+            }
         }
     });
 }
 
 function updateAllLeaderboards(leaderboardData) {
-    const leaderboardList = document.getElementById('leaderboard-list');
-    if (!leaderboardList) return;
+    const leaderboards = document.querySelectorAll('.leader-list');
     
-    leaderboardList.innerHTML = '';
-    
-    leaderboardData.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.className = 'leader-item';
+    leaderboards.forEach(leaderList => {
+        if (!leaderList) return;
         
-        const firstLetter = (item.name || 'У').charAt(0).toUpperCase();
-        const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
-        const color = colors[index % colors.length];
+        leaderList.innerHTML = '';
         
-        li.innerHTML = `
-            <span class="rank">${item.rank || index + 1}</span>
-            <div class="avatar" style="background-color: ${color}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 30px; height: 30px; font-weight: bold;">
-                ${firstLetter}
-            </div>
-            <span class="name">${item.name || `Ученик ${index + 1}`}</span>
-            <span class="score">${item.score || 0}</span>
-        `;
+        const topThree = leaderboardData.slice(0, 3);
         
-        leaderboardList.appendChild(li);
+        topThree.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = 'leader-item';
+            const displayName = item.full_name || item.name || item.username || `Ученик ${index + 1}`;
+            
+            // Создаем аватар с первой буквой имени
+            const firstLetter = displayName.charAt(0).toUpperCase();
+            const colors = ['#ff5722', '#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
+            const color = colors[index % colors.length];
+            
+            li.innerHTML = `
+                <span class="rank">${index + 1}</span>
+                <div class="avatar" style="background-color: ${color}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 30px; height: 30px; font-weight: bold;">
+                    ${firstLetter}
+                </div>
+                <span class="name">${displayName}</span>
+                <span class="score">${item.score || 0}</span>
+            `;
+            
+            leaderList.appendChild(li);
+        });
     });
 }
 
 function useFallbackData() {
     console.log('📦 Используем резервные данные...');
     updateAllLeaderboards(CONFIG.FALLBACK_DATA.LEADERBOARD);
+    
+    // Обновляем предметы из fallback данных
+    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
+    
+    layouts.forEach(layoutId => {
+        const layout = document.getElementById(layoutId);
+        if (layout) {
+            initializePhysicsSubjects(layout, layoutId);
+        }
+    });
 }
 
-// ==================== АВТОРИЗАЦИЯ ====================
+// ==================== СИСТЕМА АВТОРИЗАЦИИ ====================
 
 function openAuthModal() {
     const authModal = document.getElementById('auth-modal');
     if (authModal) {
         authModal.classList.add('show');
         document.body.style.overflow = 'hidden';
+        
+        // Показываем форму входа по умолчанию
         switchAuthTab('login');
+        
+        // Очищаем сообщения
         clearAuthMessages();
     }
 }
@@ -279,6 +397,8 @@ function closeAuthModal() {
     if (authModal) {
         authModal.classList.remove('show');
         document.body.style.overflow = '';
+        
+        // Очищаем формы
         clearAuthForms();
     }
 }
@@ -307,7 +427,7 @@ function clearAuthForms() {
 
 function clearAuthMessages() {
     const messages = document.querySelectorAll('.auth-message');
-    messages.forEach(msg => msg.remove());
+    messages.forEach(msg => msg.style.display = 'none');
 }
 
 function showAuthMessage(message, type = 'error') {
@@ -339,6 +459,7 @@ async function handleLogin(event) {
     const password = document.getElementById('login-password').value;
     const rememberMe = document.getElementById('remember-me').checked;
     
+    // Валидация
     if (!email || !password) {
         showAuthMessage('Заполните все поля', 'error');
         return;
@@ -352,34 +473,66 @@ async function handleLogin(event) {
     try {
         showAuthMessage('Выполняется вход...', 'info');
         
-        const response = await apiRequest('/api/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password })
-        });
-        
-        if (!response.success) {
-            throw new Error(response.message || 'Ошибка входа');
+        // Попытка входа через API
+        try {
+            const response = await apiRequest('/api/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            // Сохраняем пользователя из ответа сервера
+            const user = {
+                id: response.user?.id || Date.now(),
+                email: email,
+                name: response.user?.name || email.split('@')[0],
+                class_number: response.user?.class_number || 7,
+                remember_me: rememberMe,
+                token: response.token
+            };
+            
+            // Сохраняем токен
+            if (response.token) {
+                saveAuthToken(response.token);
+            }
+            
+            // Сохраняем пользователя
+            saveUserSession(user, rememberMe);
+            
+            showAuthMessage('Вход выполнен успешно!', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
+                updateUserInterface();
+                
+                // Загружаем данные с сервера после входа
+                loadServerData();
+            }, 1500);
+            
+        } catch (apiError) {
+            // Если API недоступен, используем демо-режим
+            console.log('API недоступен, используем демо-режим:', apiError);
+            
+            // Демо-пользователь
+            const user = {
+                id: Date.now(),
+                email: email,
+                name: email.split('@')[0],
+                class_number: 7,
+                remember_me: rememberMe
+            };
+            
+            // Сохраняем пользователя
+            saveUserSession(user, rememberMe);
+            
+            showAuthMessage('Демо-вход выполнен! (API недоступен)', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать в демо-режиме, ${user.name}!`, 'fa-user-check');
+                updateUserInterface();
+            }, 1500);
         }
-        
-        const user = {
-            id: response.user?.id || Date.now(),
-            email: email,
-            name: response.user?.name || email.split('@')[0],
-            class_number: response.user?.class_number || 7,
-            remember_me: rememberMe,
-            token: response.token
-        };
-        
-        saveUserSession(user, rememberMe);
-        
-        showAuthMessage('Вход выполнен успешно!', 'success');
-        
-        setTimeout(() => {
-            closeAuthModal();
-            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-check');
-            updateUserInterface();
-            loadServerData();
-        }, 1500);
         
     } catch (error) {
         showAuthMessage(error.message || 'Ошибка входа', 'error');
@@ -394,7 +547,9 @@ async function handleRegister(event) {
     const password = document.getElementById('register-password').value;
     const passwordConfirm = document.getElementById('register-password-confirm').value;
     const classNumber = document.getElementById('register-class').value;
+    const termsAccepted = document.getElementById('register-terms').checked;
     
+    // Валидация
     if (!name || !email || !password || !passwordConfirm || !classNumber) {
         showAuthMessage('Заполните все поля', 'error');
         return;
@@ -415,41 +570,73 @@ async function handleRegister(event) {
         return;
     }
     
+    if (!termsAccepted) {
+        showAuthMessage('Примите условия использования', 'error');
+        return;
+    }
+    
     try {
         showAuthMessage('Регистрация...', 'info');
         
-        const response = await apiRequest('/api/register', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                email, 
-                password, 
-                fullName: name, 
-                classNumber: parseInt(classNumber) 
-            })
-        });
-        
-        if (!response.success) {
-            throw new Error(response.message || 'Ошибка регистрации');
+        // Попытка регистрации через API
+        try {
+            const response = await apiRequest('/api/register', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email,
+                    password,
+                    fullName: name,
+                    classNumber: parseInt(classNumber)
+                })
+            });
+            
+            const user = {
+                id: response.user?.id || Date.now(),
+                email: email,
+                name: name,
+                class_number: parseInt(classNumber),
+                token: response.token
+            };
+            
+            // Сохраняем токен
+            if (response.token) {
+                saveAuthToken(response.token);
+            }
+            
+            saveUserSession(user, true);
+            
+            showAuthMessage('Регистрация прошла успешно!', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
+                updateUserInterface();
+                
+                // Загружаем данные с сервера
+                loadServerData();
+            }, 1500);
+            
+        } catch (apiError) {
+            // Если API недоступен, используем демо-режим
+            console.log('API недоступен, используем демо-регистрацию:', apiError);
+            
+            const user = {
+                id: Date.now(),
+                email: email,
+                name: name,
+                class_number: parseInt(classNumber)
+            };
+            
+            saveUserSession(user, true);
+            
+            showAuthMessage('Регистрация успешна!', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
+                updateUserInterface();
+            }, 1500);
         }
-        
-        const user = {
-            id: response.user?.id || Date.now(),
-            email: email,
-            name: name,
-            class_number: parseInt(classNumber),
-            token: response.token
-        };
-        
-        saveUserSession(user, true);
-        
-        showAuthMessage('Регистрация прошла успешно!', 'success');
-        
-        setTimeout(() => {
-            closeAuthModal();
-            showCenterMessage(`Добро пожаловать, ${user.name}!`, 'fa-user-plus');
-            updateUserInterface();
-            loadServerData();
-        }, 1500);
         
     } catch (error) {
         showAuthMessage(error.message || 'Ошибка регистрации', 'error');
@@ -472,179 +659,18 @@ function logoutUser() {
     isAuthenticated = false;
     localStorage.removeItem('scool_user');
     sessionStorage.removeItem('scool_user');
+    removeAuthToken();
     
     showCenterMessage('Вы вышли из системы', 'fa-sign-out-alt');
     updateUserInterface();
+    
+    // Возвращаем демо-данные
     useFallbackData();
 }
 
 function validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
-}
-
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-
-function showProfileMenu() {
-    const menu = document.createElement('div');
-    menu.className = 'profile-menu';
-    menu.style.cssText = `
-        position: absolute;
-        top: 60px;
-        right: 30px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        padding: 15px;
-        min-width: 200px;
-        z-index: 1000;
-    `;
-    
-    menu.innerHTML = `
-        <div style="padding: 10px; border-bottom: 1px solid #eee;">
-            <strong>${currentUser.name}</strong>
-            <div style="color: #666; font-size: 0.9em;">${currentUser.email}</div>
-            <div style="color: #888; font-size: 0.8em;">Класс: ${currentUser.class_number}</div>
-        </div>
-        <button id="logout-btn" style="width: 100%; padding: 10px; margin-top: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            <i class="fas fa-sign-out-alt"></i> Выйти
-        </button>
-    `;
-    
-    document.body.appendChild(menu);
-    
-    document.getElementById('logout-btn').addEventListener('click', function() {
-        logoutUser();
-        menu.remove();
-    });
-    
-    setTimeout(() => {
-        document.addEventListener('click', function closeMenu(e) {
-            if (!menu.contains(e.target) && e.target.id !== 'profile-btn') {
-                menu.remove();
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }, 100);
-}
-
-function showEmailMessage(email) {
-    showCenterMessage(`Напишите нам на: ${email}`, 'fa-envelope');
-}
-
-function showCenterMessage(message, icon = 'fa-info-circle') {
-    const messageElement = document.getElementById('center-message');
-    const messageText = document.getElementById('center-message-text');
-    const messageIcon = document.getElementById('center-message-icon');
-    
-    if (messageElement && messageText && messageIcon) {
-        messageText.textContent = message;
-        messageIcon.className = `fas ${icon}`;
-        messageElement.classList.add('show');
-        
-        setTimeout(() => {
-            messageElement.classList.remove('show');
-        }, 3000);
-    }
-}
-
-function hideCenterMessage() {
-    const messageElement = document.getElementById('center-message');
-    if (messageElement) {
-        messageElement.classList.remove('show');
-    }
-}
-
-function switchLayout(classNumber) {
-    hideAllLayouts();
-    
-    const layoutId = getLayoutIdByClass(classNumber);
-    const layout = document.getElementById(layoutId);
-    
-    if (layout) {
-        layout.style.display = 'flex';
-        layout.classList.add('active');
-    }
-    
-    updateActiveClassButton(classNumber);
-}
-
-function getLayoutIdByClass(classNumber) {
-    switch(classNumber) {
-        case '7': return 'desktop9-layout';
-        case '8': return 'desktop10-layout';
-        case '9': return 'desktop11-layout';
-        default: return 'standard-layout';
-    }
-}
-
-function hideAllLayouts() {
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
-    
-    layouts.forEach(layoutId => {
-        const layout = document.getElementById(layoutId);
-        if (layout) {
-            layout.style.display = 'none';
-            layout.classList.remove('active');
-        }
-    });
-}
-
-function updateActiveClassButton(selectedClass) {
-    document.querySelectorAll('.class-btn').forEach(button => {
-        if (button.getAttribute('data-class') === selectedClass) {
-            button.classList.add('active');
-        } else {
-            button.classList.remove('active');
-        }
-    });
-}
-
-function getActiveLayout() {
-    const layouts = ['desktop9-layout', 'desktop10-layout', 'desktop11-layout', 'standard-layout'];
-    
-    for (const layoutId of layouts) {
-        const layout = document.getElementById(layoutId);
-        if (layout && layout.style.display !== 'none') {
-            return layout;
-        }
-    }
-    return null;
-}
-
-function goToHome() {
-    hideAllLayouts();
-    document.getElementById('standard-layout').style.display = 'flex';
-    document.getElementById('standard-layout').classList.add('active');
-    
-    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelector('.class-btn[data-class="7"]')?.classList.add('active');
-}
-
-function highlightText(text, searchTerm) {
-    if (!searchTerm || searchTerm.length < 2) return text;
-    
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
-}
-
-function updateThemeLabels(isDark) {
-    const lightLabel = document.querySelector('.theme-label.light');
-    const darkLabel = document.querySelector('.theme-label.dark');
-    
-    if (lightLabel && darkLabel) {
-        if (isDark) {
-            lightLabel.style.color = '#aaa';
-            lightLabel.style.fontWeight = 'normal';
-            darkLabel.style.color = '#87CEEB';
-            darkLabel.style.fontWeight = '500';
-        } else {
-            lightLabel.style.color = '#3f51b5';
-            lightLabel.style.fontWeight = '500';
-            darkLabel.style.color = '#666';
-            darkLabel.style.fontWeight = 'normal';
-        }
-    }
 }
 
 // ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
@@ -679,12 +705,15 @@ function setupEventListeners() {
             const layoutId = getLayoutIdByClass(selectedClass);
             const layout = document.getElementById(layoutId);
             if (layout) {
+                // Если есть соединение с сервером, загружаем данные
                 if (isAuthenticated) {
                     loadSubjectsForClass(selectedClass);
                 } else {
                     initializePhysicsSubjects(layout, layoutId);
                 }
             }
+            
+            console.log(`Переключились на ${selectedClass} класс`);
         });
     });
     
@@ -702,10 +731,15 @@ function setupEventListeners() {
             }
             
             searchTimeout = setTimeout(() => {
-                performSearch(searchTerm);
+                const localResults = CONFIG.FALLBACK_DATA.SEARCH.filter(item => 
+                    item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+                displaySearchResults(localResults, searchTerm);
             }, 300);
         });
         
+        // Закрытие результатов при клике вне поля поиска
         document.addEventListener('click', function(event) {
             const searchResults = document.getElementById('search-results');
             if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
@@ -714,11 +748,12 @@ function setupEventListeners() {
         });
     }
     
-    // Кнопки
+    // Кнопка "Вся таблица" - ПЛАШКА
     document.getElementById('full-table-btn')?.addEventListener('click', function() {
         showCenterMessage('Функция "Лидеры турнира" в разработке!', 'fa-trophy');
     });
     
+    // Иконка уведомлений - ПЛАШКА
     document.getElementById('notification-btn')?.addEventListener('click', function() {
         if (!isAuthenticated) {
             openAuthModal();
@@ -727,22 +762,26 @@ function setupEventListeners() {
         }
     });
     
+    // Иконка профиля - ОТКРЫТИЕ МОДАЛКИ АВТОРИЗАЦИИ ИЛИ ПРОФИЛЯ
     document.getElementById('profile-btn')?.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
         if (isAuthenticated && currentUser) {
+            // Если пользователь авторизован, показываем меню профиля
             showProfileMenu();
         } else {
+            // Иначе открываем модалку авторизации
             openAuthModal();
         }
     });
     
-    // Кнопки "Написать нам"
+    // Кнопки "Написать нам" - СООБЩЕНИЕ С ПОЧТОЙ
     document.querySelectorAll('.mail-button').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            
             const email = this.getAttribute('data-email');
             showEmailMessage(email);
         });
@@ -754,17 +793,23 @@ function setupEventListeners() {
     document.getElementById('home-from-desktop11')?.addEventListener('click', goToHome);
     
     // Кнопка закрытия центральной плашки
-    document.getElementById('close-center-message')?.addEventListener('click', hideCenterMessage);
+    document.getElementById('close-center-message')?.addEventListener('click', function() {
+        hideCenterMessage();
+    });
     
-    // Модальное окно авторизации
+    // ============ ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА ============
+    
+    // Закрытие модального окна
     document.querySelector('.auth-close')?.addEventListener('click', closeAuthModal);
     
+    // Клик вне модального окна для закрытия
     document.getElementById('auth-modal')?.addEventListener('click', function(e) {
         if (e.target === this) {
             closeAuthModal();
         }
     });
     
+    // Переключение вкладок
     document.querySelectorAll('.auth-tab-btn').forEach(tab => {
         tab.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
@@ -772,14 +817,27 @@ function setupEventListeners() {
         });
     });
     
+    // Отправка формы входа
     document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+    
+    // Отправка формы регистрации
     document.getElementById('register-form')?.addEventListener('submit', handleRegister);
     
+    // Кнопки социальных сетей
+    document.querySelectorAll('.auth-social-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const provider = this.classList.contains('google') ? 'Google' : 'VK';
+            showCenterMessage(`Вход через ${provider} в разработке!`, 'fa-external-link-alt');
+        });
+    });
+    
+    // Ссылка "Забыли пароль?"
     document.querySelector('.auth-forgot')?.addEventListener('click', function(e) {
         e.preventDefault();
         showCenterMessage('Функция восстановления пароля в разработке!', 'fa-key');
     });
     
+    // Закрытие по Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeAuthModal();
@@ -787,6 +845,7 @@ function setupEventListeners() {
     });
 }
 
+// Функция для загрузки предметов для класса
 async function loadSubjectsForClass(classNumber) {
     try {
         const subjects = await apiRequest(`/api/subjects/${classNumber}`);
@@ -802,9 +861,16 @@ async function loadSubjectsForClass(classNumber) {
                             titleElement.textContent = subjects[index].name || 'Физика';
                         }
                         
-                        const classElement = card.querySelector('p');
-                        if (classElement) {
-                            classElement.textContent = `${classNumber} класс`;
+                        const progressFill = card.querySelector('.progress-fill');
+                        const progressText = card.querySelector('.progress-text');
+                        
+                        const progress = subjects[index].progress || 0;
+                        
+                        if (progressFill) {
+                            progressFill.style.width = `${progress}%`;
+                        }
+                        if (progressText) {
+                            progressText.textContent = `${progress}% завершено`;
                         }
                     }
                 });
@@ -815,16 +881,461 @@ async function loadSubjectsForClass(classNumber) {
     }
 }
 
-async function performSearch(searchTerm) {
-    try {
-        const results = await apiRequest(`/api/search?q=${encodeURIComponent(searchTerm)}`);
-        displaySearchResults(results, searchTerm);
-    } catch (error) {
-        const localResults = CONFIG.FALLBACK_DATA.SEARCH.filter(item => 
-            item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            item.keywords.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        displaySearchResults(localResults, searchTerm);
+function showProfileMenu() {
+    if (!currentUser) return;
+    
+    const menuHtml = `
+        <div class="profile-menu-overlay">
+            <div class="profile-menu">
+                <div class="profile-header">
+                    <i class="fas fa-user-circle"></i>
+                    <div>
+                        <h3>${currentUser.name}</h3>
+                        <p>${currentUser.email}</p>
+                        <p>${currentUser.class_number} класс</p>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button class="profile-action-btn" data-action="settings">
+                        <i class="fas fa-cog"></i> Настройки
+                    </button>
+                    <button class="profile-action-btn" data-action="stats">
+                        <i class="fas fa-chart-bar"></i> Статистика
+                    </button>
+                    <button class="profile-action-btn" data-action="help">
+                        <i class="fas fa-question-circle"></i> Помощь
+                    </button>
+                    <button class="profile-action-btn logout" data-action="logout">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Удаляем предыдущие меню
+    document.querySelectorAll('.profile-menu-overlay').forEach(el => el.remove());
+    
+    // Создаем стили для меню
+    const styleId = 'profile-menu-styles';
+    let styleElement = document.getElementById(styleId);
+    
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.textContent = `
+            .profile-menu-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 9999;
+                display: flex;
+                justify-content: flex-end;
+                align-items: flex-start;
+                padding: 70px 20px 0 0;
+                animation: fadeIn 0.2s;
+            }
+            
+            .profile-menu {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                width: 300px;
+                overflow: hidden;
+                animation: slideDown 0.3s;
+            }
+            
+            @keyframes slideDown {
+                from {
+                    transform: translateY(-20px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            
+            .profile-header {
+                padding: 20px;
+                background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+                color: white;
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .profile-header i {
+                font-size: 48px;
+            }
+            
+            .profile-header h3 {
+                margin: 0 0 5px 0;
+                font-size: 18px;
+            }
+            
+            .profile-header p {
+                margin: 0;
+                font-size: 14px;
+                opacity: 0.9;
+            }
+            
+            .profile-actions {
+                padding: 10px 0;
+            }
+            
+            .profile-action-btn {
+                width: 100%;
+                padding: 12px 20px;
+                border: none;
+                background: none;
+                text-align: left;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 15px;
+                color: #333;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            
+            .profile-action-btn:hover {
+                background: #f5f5f5;
+            }
+            
+            .profile-action-btn i {
+                width: 20px;
+                text-align: center;
+            }
+            
+            .profile-action-btn.logout {
+                color: #f44336;
+                border-top: 1px solid #eee;
+                margin-top: 5px;
+            }
+            
+            body.dark-theme .profile-menu {
+                background: #1e1e1e;
+            }
+            
+            body.dark-theme .profile-action-btn {
+                color: #e0e0e0;
+            }
+            
+            body.dark-theme .profile-action-btn:hover {
+                background: #2d2d2d;
+            }
+            
+            body.dark-theme .profile-action-btn.logout {
+                border-top-color: #333;
+            }
+        `;
+        document.head.appendChild(styleElement);
+    }
+    
+    // Добавляем меню в DOM
+    const overlay = document.createElement('div');
+    overlay.innerHTML = menuHtml;
+    document.body.appendChild(overlay);
+    
+    // Обработчики для кнопок меню
+    overlay.querySelectorAll('.profile-action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            
+            switch(action) {
+                case 'settings':
+                    showCenterMessage('Настройки профиля в разработке!', 'fa-cog');
+                    break;
+                case 'stats':
+                    showCenterMessage('Статистика в разработке!', 'fa-chart-bar');
+                    break;
+                case 'help':
+                    showCenterMessage('Раздел помощи в разработке!', 'fa-question-circle');
+                    break;
+                case 'logout':
+                    logoutUser();
+                    break;
+            }
+            
+            // Закрываем меню
+            overlay.remove();
+        });
+    });
+    
+    // Закрытие меню при клике вне его
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.remove();
+        }
+    });
+    
+    // Закрытие по Escape
+    const closeMenu = function(e) {
+        if (e.key === 'Escape') {
+            overlay.remove();
+            document.removeEventListener('keydown', closeMenu);
+        }
+    };
+    document.addEventListener('keydown', closeMenu);
+}
+
+// Показать сообщение с почтой
+function showEmailMessage(email) {
+    // Создаем стили для сообщения с почтой
+    const styleId = 'email-message-styles';
+    let styleElement = document.getElementById(styleId);
+    
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.textContent = `
+            .email-message-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .email-message-box {
+                background-color: white;
+                border-radius: 16px;
+                padding: 30px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                animation: slideUp 0.4s ease;
+                text-align: center;
+            }
+            
+            body.dark-theme .email-message-box {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+            }
+            
+            @keyframes slideUp {
+                from { transform: translateY(30px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            
+            .email-icon-large {
+                font-size: 48px;
+                color: #87CEEB;
+                margin-bottom: 20px;
+            }
+            
+            .email-message-box h3 {
+                margin: 0 0 15px 0;
+                font-size: 24px;
+                color: #333;
+            }
+            
+            body.dark-theme .email-message-box h3 {
+                color: #e0e0e0;
+            }
+            
+            .email-address {
+                font-size: 18px;
+                font-weight: bold;
+                color: #3f51b5;
+                margin: 15px 0;
+                padding: 12px;
+                background-color: #f0f8ff;
+                border-radius: 8px;
+                border: 2px solid #87CEEB;
+                word-break: break-all;
+            }
+            
+            body.dark-theme .email-address {
+                background-color: #2d2d2d;
+                color: #87CEEB;
+                border-color: #5cb4e0;
+            }
+            
+            .email-hint {
+                font-size: 14px;
+                color: #666;
+                margin: 15px 0 25px 0;
+                line-height: 1.5;
+            }
+            
+            body.dark-theme .email-hint {
+                color: #aaa;
+            }
+            
+            .email-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+            }
+            
+            .email-btn {
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.3s;
+                border: none;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 500;
+            }
+            
+            .email-copy-btn {
+                background-color: #87CEEB;
+                color: white;
+            }
+            
+            .email-copy-btn:hover {
+                background-color: #64b5f6;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(135, 206, 235, 0.3);
+            }
+            
+            .email-close-btn {
+                background-color: #f0f0f0;
+                color: #333;
+            }
+            
+            body.dark-theme .email-close-btn {
+                background-color: #333;
+                color: #e0e0e0;
+            }
+            
+            .email-close-btn:hover {
+                background-color: #e0e0e0;
+                transform: translateY(-2px);
+            }
+            
+            body.dark-theme .email-close-btn:hover {
+                background-color: #444;
+            }
+            
+            .copy-success {
+                color: #4CAF50;
+                font-size: 14px;
+                margin-top: 15px;
+                animation: fadeInOut 3s ease;
+            }
+            
+            @keyframes fadeInOut {
+                0% { opacity: 0; }
+                20% { opacity: 1; }
+                80% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleElement);
+    }
+    
+    // Удаляем предыдущие сообщения
+    const existingOverlays = document.querySelectorAll('.email-message-overlay');
+    existingOverlays.forEach(overlay => overlay.remove());
+    
+    // Создаем оверлей
+    const overlay = document.createElement('div');
+    overlay.className = 'email-message-overlay';
+    
+    // Создаем сообщение
+    overlay.innerHTML = `
+        <div class="email-message-box">
+            <i class="fas fa-envelope email-icon-large"></i>
+            <h3>Написать нам</h3>
+            <p>Наша почта для обратной связи:</p>
+            <div class="email-address">${email}</div>
+            <p class="email-hint">Скопируйте адрес и напишите нам в вашем почтовом клиенте</p>
+            <div class="email-buttons">
+                <button class="email-btn email-copy-btn">
+                    <i class="fas fa-copy"></i> Скопировать
+                </button>
+                <button class="email-btn email-close-btn">
+                    <i class="fas fa-times"></i> Закрыть
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Обработчики событий
+    const copyBtn = overlay.querySelector('.email-copy-btn');
+    const closeBtn = overlay.querySelector('.email-close-btn');
+    
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(email).then(() => {
+            const successMsg = document.createElement('div');
+            successMsg.className = 'copy-success';
+            successMsg.textContent = 'Email скопирован в буфер обмена!';
+            overlay.querySelector('.email-message-box').appendChild(successMsg);
+            
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.remove();
+                }
+            }, 3000);
+        });
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        overlay.remove();
+    });
+    
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+    
+    // Автозакрытие через 10 секунд
+    setTimeout(() => {
+        if (overlay.parentNode) {
+            overlay.remove();
+        }
+    }, 10000);
+}
+
+// Показать центральную плашку (для уведомлений и кнопки "Вся таблица")
+function showCenterMessage(message, icon = 'fa-tools') {
+    const centerMessage = document.getElementById('center-message');
+    const centerIcon = document.getElementById('center-message-icon');
+    const centerText = document.getElementById('center-message-text');
+    
+    if (!centerMessage || !centerIcon || !centerText) return;
+    
+    // Устанавливаем иконку и текст
+    centerIcon.className = `fas ${icon} center-message-icon`;
+    centerText.textContent = message;
+    
+    // Показываем плашку
+    centerMessage.classList.add('show');
+    
+    // Автозакрытие через 4 секунды
+    setTimeout(() => {
+        hideCenterMessage();
+    }, 4000);
+}
+
+// Скрыть центральную плашку
+function hideCenterMessage() {
+    const centerMessage = document.getElementById('center-message');
+    if (centerMessage) {
+        centerMessage.classList.remove('show');
     }
 }
 
@@ -838,18 +1349,24 @@ function displaySearchResults(results, searchTerm) {
     if (results.length === 0) {
         const noResults = document.createElement('div');
         noResults.className = 'search-no-results';
-        noResults.innerHTML = '<i class="fas fa-search"></i> ничего не найдено';
+        noResults.innerHTML = `
+            <i class="fas fa-search" style="margin-right: 8px;"></i>
+            ничего не найдено
+        `;
         searchResults.appendChild(noResults);
     } else {
         results.forEach(item => {
             const resultItem = document.createElement('div');
             resultItem.className = 'search-result-item';
             
+            const highlightedTitle = highlightText(item.title, searchTerm);
+            const highlightedDesc = highlightText(item.description, searchTerm);
+            
             resultItem.innerHTML = `
                 <i class="${item.icon || 'fas fa-search'} result-icon"></i>
                 <div class="result-text">
-                    <div>${highlightText(item.title, searchTerm)}</div>
-                    <small>${highlightText(item.description, searchTerm)}</small>
+                    <div>${highlightedTitle}</div>
+                    <small>${highlightedDesc}</small>
                 </div>
                 <span class="result-type">${item.type}</span>
             `;
@@ -883,10 +1400,99 @@ function displaySearchResults(results, searchTerm) {
     searchResults.classList.add('show');
 }
 
+// ==================== НАВИГАЦИЯ И МАКЕТЫ ====================
+
+function getLayoutIdByClass(className) {
+    switch(className) {
+        case '7': return 'desktop9-layout';
+        case '8': return 'desktop10-layout';
+        case '9': return 'desktop11-layout';
+        default: return 'standard-layout';
+    }
+}
+
+function switchLayout(selectedClass) {
+    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+    const selectedBtn = document.querySelector(`.class-btn[data-class="${selectedClass}"]`);
+    if (selectedBtn) selectedBtn.classList.add('active');
+    
+    document.getElementById('desktop9-layout').style.display = 'none';
+    document.getElementById('desktop10-layout').style.display = 'none';
+    document.getElementById('desktop11-layout').style.display = 'none';
+    document.getElementById('standard-layout').style.display = 'none';
+    
+    const layoutId = getLayoutIdByClass(selectedClass);
+    document.getElementById(layoutId).style.display = 'flex';
+    
+    updatePageTitle(selectedClass);
+}
+
+function getActiveLayout() {
+    const layouts = [
+        'desktop9-layout',
+        'desktop10-layout', 
+        'desktop11-layout',
+        'standard-layout'
+    ];
+    
+    for (const layoutId of layouts) {
+        const layout = document.getElementById(layoutId);
+        if (layout && layout.style.display !== 'none') {
+            return layout;
+        }
+    }
+    
+    return document.getElementById('standard-layout');
+}
+
+function goToHome() {
+    document.getElementById('desktop9-layout').style.display = 'none';
+    document.getElementById('desktop10-layout').style.display = 'none';
+    document.getElementById('desktop11-layout').style.display = 'none';
+    document.getElementById('standard-layout').style.display = 'flex';
+    document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
+}
+
+function updatePageTitle(classNumber) {
+    const pageTitles = document.querySelectorAll('.page-title, .layout-title');
+    pageTitles.forEach(title => {
+        if (title.textContent.includes('класс')) {
+            title.textContent = `Физика - ${classNumber} класс`;
+        }
+    });
+}
+
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+
+function highlightText(text, searchTerm) {
+    if (!searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+function updateThemeLabels(isDark) {
+    const lightLabel = document.querySelector('.theme-label.light');
+    const darkLabel = document.querySelector('.theme-label.dark');
+    
+    if (lightLabel && darkLabel) {
+        if (isDark) {
+            lightLabel.style.color = '#aaa';
+            lightLabel.style.fontWeight = 'normal';
+            darkLabel.style.color = '#87CEEB';
+            darkLabel.style.fontWeight = '500';
+        } else {
+            lightLabel.style.color = '#3f51b5';
+            lightLabel.style.fontWeight = '500';
+            darkLabel.style.color = '#666';
+            darkLabel.style.fontWeight = 'normal';
+        }
+    }
+}
+
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - SCool инициализация');
+    console.log('DOMContentLoaded - SCool инициализация для Railway');
     
     // Инициализация темы
     const themeToggle = document.getElementById('theme-toggle');
@@ -908,3 +1514,35 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('standard-layout').style.display = 'flex';
     document.querySelectorAll('.class-btn').forEach(btn => btn.classList.remove('active'));
 });
+
+// Дополнительная защита от английских названий
+function forceRussianTitles() {
+    const replacements = {
+        'Physics': 'Физика',
+        'physics': 'Физика',
+        'PHYSICS': 'Физика',
+        'Mathematics': 'Математика',
+        'Math': 'Математика',
+        'Chemistry': 'Химия',
+        'Biology': 'Биология',
+        'Algebra': 'Алгебра',
+        'Geometry': 'Геометрия',
+        'Computer Science': 'Информатика',
+        'Informatics': 'Информатика'
+    };
+    
+    document.querySelectorAll('.subject-card h3').forEach(title => {
+        const currentText = title.textContent.trim();
+        if (currentText === '' || replacements[currentText]) {
+            const newText = replacements[currentText] || 'Физика';
+            if (currentText !== newText) {
+                console.log(`Исправляем: "${currentText}" → "${newText}"`);
+                title.textContent = newText;
+            }
+        }
+    });
+}
+
+// Запускаем проверку
+setTimeout(forceRussianTitles, 500);
+setTimeout(forceRussianTitles, 2000);
